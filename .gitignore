@@ -1,0 +1,6 @@
+.DS_Store
+.ipynb_checkpoints/*
+data/*
+src/.ipynb_checkpoints/*
+src/__pycache__/*
+prompts/*
