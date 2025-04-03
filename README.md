@@ -8,6 +8,7 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 ## Quick start
 
 ```bash
+pip install -r requirements.txt
 python main.py generate
 ```
 
