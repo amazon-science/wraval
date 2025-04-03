@@ -9,10 +9,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import textwrap
+import os
 
 bucket_name = 'slm-benchmarking'
-# path = 'tones/annotate/slm-writing-assist-evaluation-clone/annotations/worker-response/iteration-1'
-path = 'tones/annotate/slm-writing-assist-madrid-clone/annotations/worker-response/iteration-1'
+labelling_job = 'slm-writing-assist-seattle-small'
+path = f'tones/annotate/{labelling_job}/annotations/worker-response/iteration-1'
 
 s3 = boto3.client('s3')
 
@@ -21,9 +22,13 @@ s3 = boto3.client('s3')
 paginator = s3.get_paginator('list_objects_v2')
 
 # Create a PageIterator from the Paginator
-page_iterator = paginator.paginate(Bucket=bucket_name)
+page_iterator = paginator.paginate(Bucket=bucket_name, Prefix = path)
 
-files = [obj['Contents']['Key'] for obj in page_iterator if obj['Key'].endswith('.json')]
+o = [obj for obj in page_iterator]
+
+
+
+files = [obj['Key'] for obj in o[0]['Contents'] if obj['Key'].endswith('.json')]
 
 records = []
 
@@ -45,9 +50,56 @@ for file in files:
 data = pd.DataFrame(records)
 results = data.groupby('sample').agg(grading=('grading', 'mean'), count=('grading', 'count'))
 
-all_data = pd.read_csv('data/tones/all.csv')
-all_data['human_rating'] = ''
-all_data.loc[results.index, 'human_rating'] = results['grading'].values
+
+### all data
+
+folder_path = os.path.expanduser('~/data')
+files = sorted([f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))])
+last_file = files[-2]
+
+all_data = pd.read_csv(os.path.join(folder_path, last_file))
+
+
+### rewrite
+
+
+tones = ['casual', 'elaborate', 'emojify', 'improve', 'keypoints', 'professional', 'proofread', 'shorten', 'witty']
+models = ['haiku', 'qwen', 'phi']
+
+records = []
+
+for t in tones:
+    for m in models:
+        f = f'data/tones/{t.lower()}_{m}_rewrite.csv'
+        r = pd.read_csv(f)
+        r['tone'] = t
+        r['model'] = m        
+        records.append(r)
+
+
+rewrite = pd.concat(records, axis = 0)
+rewrite.rewrite_score = rewrite.rewrite_score.astype(int)
+rewrite['key'] = rewrite[['tone', 'model','input']].astype(str).agg('_'.join, axis=1)
+rewrite['key'] = rewrite['key'].astype(str)
+
+
+### subset for groundtruth
+
+subset = pd.read_csv('~/data/all_small.csv')
+
+subset['human_rating'] = ''
+
+subset.loc[results.index, 'human_rating'] = results['grading'].values
+
+subset.rename({'source': 'input', 'gen': 'output'}, axis = 1, inplace = True)
+subset.drop('original', axis = 1, inplace = True)
+subset.drop('Unnamed: 0', axis = 1, inplace = True)
+
+merged = pd.merge(all_data, subset,
+                    on=['input', 'output', 'tone', 'model'],
+                    how='inner')
+
+merged
 
 
 def wrap_text(text, width=30):
@@ -55,13 +107,13 @@ def wrap_text(text, width=30):
         return "\n".join(textwrap.wrap(text, width))
     return text
 
-wrapped_data = all_data.map(lambda x: wrap_text(x, width=30))
+wrapped_data = merged.map(lambda x: wrap_text(x, width=30))
 
-human_vs_judge = wrapped_data.loc[results.index, ['model', 'tone', 'input', 'output', 'overall_score', 'human_rating']]
+human_vs_judge = wrapped_data.loc[:, ['model', 'tone', 'input', 'output', 'overall_score', 'human_rating']]
 
 print(human_vs_judge.to_markdown())
 
-human_vs_judge.to_csv('data/tones/humanVjudge_madrid.csv')
+human_vs_judge.to_csv('~/data/humanVjudge_seattle.csv')
 
 
 ############## plot the judge VS human ratings
@@ -72,9 +124,9 @@ human_vs_judge['human_rating'] = pd.to_numeric(human_vs_judge['human_rating'], e
 slope, intercept = np.polyfit(human_vs_judge['overall_score'], human_vs_judge['human_rating'], 1)
 regression_line = slope * human_vs_judge['overall_score'] + intercept
 
-fig = px.scatter(human_vs_judge, x="overall_score", y="human_rating", trendline="ols",
-                 title="Scatter Plot with Regression Line",
-                 labels={"X": "Judge Score", "Y": "Human Score"})
+# fig = px.scatter(human_vs_judge, x="overall_score", y="human_rating", trendline="ols",
+#                  title="Scatter Plot with Regression Line",
+#                  labels={"X": "Judge Score", "Y": "Human Score"})
 
 # Add jittering to avoid overlap
 human_vs_judge['jitter_overall_score'] = human_vs_judge['overall_score'] + np.random.normal(0, 0.02, size=len(human_vs_judge['overall_score']))

@@ -3,7 +3,7 @@
 # // SPDX-License-Identifier: Apache-2.0
 #
 import pandas as pd
-from prompts.prompts import generate_input_prompt, generate_system_prompt, get_rubric
+from prompts.prompts import generate_input_prompt, generate_system_prompt, get_rubric, rewrite_prompt
 from src.completion import get_completion, batch_get_completions
 import re
 
@@ -59,3 +59,17 @@ def judge(modelId, bedrock_client, q, a, tone='PROFESSIONAL'):
     d['overall_score'] = d[[f'{metric}_score' for metric in rubrics]].mean(axis=1)
 
     return(d)
+
+def rewrite_judge(modelId, bedrock_client, q, a):
+
+
+    d = pd.DataFrame({'input': q, 'output': a})
+
+    p = []
+    for i,o in zip(q, a):
+        p.append(rewrite_prompt(i, o))
+    r = batch_get_completions(modelId, bedrock_client,
+                              p, max_concurrent=len(p))
+
+    d['rewrite_score'] = r
+    return d
