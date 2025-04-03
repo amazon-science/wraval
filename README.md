@@ -7,7 +7,9 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 
 ## Quick start
 
-You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemaker notebook with the permissions to call Bedrock models (make sure you enable the Bedrock models in your AWS console beforehand).
+```bash
+python main.py generate
+```
 
 ## Structure
 
@@ -17,6 +19,37 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 4. Finally you can setup a Sagemaker Groundtruth tasks [here](4 human_eval.py)
 
 An additional notebook is provided to benchmark models on translation tasks on open datasets [here](Haiku_translate.ipynb).
+
+## Data Generation
+
+Generate synthetic data for tone transformation using various LLMs. Data is saved to CSV files with timestamps and can optionally be uploaded to S3.
+
+### Basic Usage
+
+```bash
+# By default generates all tone types. A specific tone and model can be specified.
+python main.py generate --type witty_sentences --model nova-lite
+```
+
+### Available Tone Types
+- `witty_sentences`: Factual sentences to be made witty
+- `professional_sentences`: Casual sentences to be made professional
+- `casual_sentences`: Formal sentences to be made casual
+- `elaborate_sentences`: Simple sentences to be made detailed
+- `shorten_sentences`: Wordy sentences to be made concise
+- `improve_sentences`: Poorly written sentences to be improved
+- `keypoints_sentences`: Detailed paragraphs for key point extraction
+- `proofread_sentences`: Sentences with errors to be corrected
+- `emojify_sentences`: Plain sentences to be enhanced with emojis
+- `paragraph_summary`: Paragraph-summary pairs
+
+### Output
+- Generated data is saved to `~/data/all-tones-{timestamp}.csv`
+- Raw outputs are saved to `~/data/{tone_type}_raw.txt`
+
+## Notebook quick start
+
+You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemaker notebook with the permissions to call Bedrock models (make sure you enable the Bedrock models in your AWS console beforehand).
 
 ## ToDo
 
