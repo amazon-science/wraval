@@ -6,6 +6,9 @@ import time
 import random
 from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
+import json
+import boto3
 
 def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retries=3, initial_delay=1):
     for attempt in range(max_retries):
@@ -91,3 +94,83 @@ def batch_get_completions(modelId, bedrock_client, prompts, system_prompts=None,
             time.sleep(2)  # Adjust this delay as needed
 
     return results
+
+# Add this new function for future use
+def bedrock_batch_inference(modelId, bedrock_client, prompts, system_prompt, aws_account, tone):
+    """
+    Future implementation of Bedrock's official batch inference API.
+    Currently stored for later use.
+    
+    Args:
+        modelId: The Bedrock model ID
+        bedrock_client: Boto3 Bedrock client
+        prompts: List of prompts to process
+        system_prompt: System prompt to use
+        aws_account: AWS account number
+        tone: Current tone being processed
+    """
+    data_dir = os.path.expanduser('~/data')
+    input_file = os.path.join(data_dir, 'batch_input.jsonl')
+    
+    # Create JSONL records
+    with open(input_file, 'w') as f:
+        for idx, prompt in enumerate(prompts):
+            record = {
+                "recordId": f"RECORD{idx:08d}",
+                "modelInput": {
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 1024,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": system_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": [{"type": "text", "text": prompt}]
+                        }
+                    ]
+                }
+            }
+            f.write(json.dumps(record) + '\n')
+    
+    # Configure batch job
+    input_config = {
+        "s3InputDataConfig": {
+            "s3Uri": f"s3://llm-finetune-us-east-1-{aws_account}/batch_input/{tone}.jsonl"
+        }
+    }
+    
+    output_config = {
+        "s3OutputDataConfig": {
+            "s3Uri": f"s3://llm-finetune-us-east-1-{aws_account}/batch_output/{tone}/"
+        }
+    }
+    
+    # Create batch inference job
+    bedrock = boto3.client(service_name="bedrock")
+    response = bedrock.create_model_invocation_job(
+        roleArn=f"arn:aws:iam::{aws_account}:role/BedrockBatchInferenceRole",
+        modelId=modelId,
+        jobName=f"tone-transform-{tone}-{int(time.time())}",
+        inputDataConfig=input_config,
+        outputDataConfig=output_config
+    )
+    
+    return response.get('jobArn')
+
+def get_job_status(bedrock_client, job_arn):
+    """Helper function to get batch job status"""
+    return bedrock_client.get_model_invocation_job(jobIdentifier=job_arn)['status']
+
+def get_job_error_details(bedrock_client, job_arn):
+    """Helper function to get error details for failed jobs"""
+    response = bedrock_client.get_model_invocation_job(jobIdentifier=job_arn)
+    return {
+        'status': response.get('status'),
+        'failure_reason': response.get('failureReason', 'No failure reason provided'),
+        'creation_time': response.get('creationTime'),
+        'completion_time': response.get('completionTime'),
+        'input_config': response.get('inputDataConfig'),
+        'output_config': response.get('outputDataConfig')
+    }

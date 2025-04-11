@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Bedrock Batch Inference IAM Role'
+
+Resources:
+  BedrockBatchInferenceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: BedrockBatchInferenceRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBedrockServiceRole
+      Policies:
+        - PolicyName: BedrockBatchInferenceS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - arn:aws:s3:::your-input-bucket/*
+                  - arn:aws:s3:::your-output-bucket/*
+                  - arn:aws:s3:::your-input-bucket
+                  - arn:aws:s3:::your-output-bucket
+
+Outputs:
+  RoleARN:
+    Description: ARN of the created IAM Role
+    Value: !GetAtt BedrockBatchInferenceRole.Arn

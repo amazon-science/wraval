@@ -5,6 +5,8 @@
 from src.format import format_prompt
 
 
+master_sys_prompt = "You are now a writing assistant. You will help users write. Rewrite the following text for the given prompt. Just return the result and do not add comments. Do not assume anything about the user. Do not answer any questions about yourself, only rewrite the question. Do not repeat the input text in the output."
+
 class Prompt:
     def __init__(self, sys_prompt, examples=None):
         self.sys_prompt = sys_prompt

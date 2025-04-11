@@ -68,7 +68,7 @@ def save_dataset(
 
 def load_latest_dataset(
     data_dir: str = "~/data",
-    prefix: Optional[str] = None,
+    prefix: Optional[str] = "all-tones",
     n_latest: int = 1
 ) -> Union[pd.DataFrame, list[pd.DataFrame]]:
     """

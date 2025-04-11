@@ -54,8 +54,27 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 
 ## ToDo
 
+
+
+- [ ] make everything a one-liner
+    - [x] 1.pynb
+    - [ ] 2.pynb
+    - [ ] 3.pynb
+    - [ ] 4a.pynb: 
+        - use functions in data_utils
+        - read the tones and models from the last csv retrieved via data_utils
+        - refactor into different functions (1) csv->manifest.jsonl (2) optional hierarchical sampling function
+    - [ ] 4b.pynb:     
+        - use functions in data_utils
+        - read the tones and models from the last csv retrieved via data_utils
+        - refactor into different functions (1) get output data on AWS (2) merge it back into the csv and save (3) plot the LLM judge results VS the human feedback
 - [ ] run Qwen and Phi as standalone sagemaker endpoints.
-- [x] requirements.txt. (uv?)
-- [ ] data
-- [ ] 1. data generation -> prompt library
+- [x] requirements.txt. 
+- [x] data
+- [x] 1. data generation -> prompt library
 - [ ] 2.b. LLM -> implement this in a modular way in in format_prompt_as_xml
+- [ ] merge generate_all_datasets and generate_specific_datasets
+- [ ] batch processing for Bedrock
+- [ ] batch processing for Sagemaker endpoint
+- [ ] uv?
+- [ ] from main.py to setup.py
