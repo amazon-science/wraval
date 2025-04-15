@@ -9,6 +9,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
 import boto3
+import base64
+import sys
+import re
+# Function to extract last assistant response from each entry
+
+
+def extract_last_assistant_response(data):
+    matches = re.findall(r"<\|assistant\|>(.*?)<\|end\|>", data, re.DOTALL)
+    # matches = re.findall(r"<assistant>(.*?)</assistant>", data, re.DOTALL)
+    if matches:
+        return matches[-1].strip()
+    else:
+        return data
 
 def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retries=3, initial_delay=1):
     for attempt in range(max_retries):
@@ -174,3 +187,22 @@ def get_job_error_details(bedrock_client, job_arn):
         'input_config': response.get('inputDataConfig'),
         'output_config': response.get('outputDataConfig')
     }
+
+def invoke_sagemaker_endpoint(payload, endpoint_name="Phi-3-5-mini-instruct", region="us-east-1"):
+    try:
+        sagemaker_runtime_client = boto3.client("sagemaker-runtime", region_name=region)
+        input_string = json.dumps(payload)
+        response = sagemaker_runtime_client.invoke_endpoint(
+            EndpointName=endpoint_name,
+            Body=input_string.encode("utf-8"),
+            ContentType="application/json"
+        )
+        json_output = response["Body"].readlines()
+        plain_output = '\n'.join(json.loads(json_output[0]))
+        last_assistant = extract_last_assistant_response(plain_output)
+        print("Test response:", last_assistant)
+        return last_assistant
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise e
+

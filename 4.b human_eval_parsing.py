@@ -26,8 +26,6 @@ page_iterator = paginator.paginate(Bucket=bucket_name, Prefix = path)
 
 o = [obj for obj in page_iterator]
 
-
-
 files = [obj['Key'] for obj in o[0]['Contents'] if obj['Key'].endswith('.json')]
 
 records = []

@@ -6,13 +6,17 @@ import os
 import argparse
 from typing import List
 import pandas as pd
-from src.completion import batch_get_completions
-from src.format import format_prompt_as_xml
+from src.completion import (
+    batch_get_completions, 
+    invoke_sagemaker_endpoint
+)
+from src.format import format_prompt_as_xml, format_prompt
 from src.prompt_tones import master_sys_prompt
-import prompts.prompt_tones as prompts_module
 from tqdm import tqdm
 import json
 import time
+from importlib import import_module
+from transformers import AutoTokenizer
 
 def setup_argparse() -> argparse.ArgumentParser:
     """Setup command line argument parser"""
@@ -32,12 +36,16 @@ def setup_argparse() -> argparse.ArgumentParser:
                       help='Model to use (default: haiku-3)')
     
     # AWS account argument
-    parser.add_argument('--aws-account', required=True,
+    parser.add_argument('--aws-account', required=False,
                       help='AWS account number for Bedrock ARN')
     
     # S3 upload argument
     parser.add_argument('--upload-s3', action='store_true',
                       help='Upload generated datasets to S3')
+    
+    # Endpoint type argument
+    parser.add_argument('--endpoint-type', choices=['bedrock', 'sagemaker'], default='bedrock',
+                      help='Type of endpoint to use (default: bedrock)')
     
     return parser
 
@@ -128,9 +136,10 @@ def get_job_error_details(bedrock, job_arn):
         return f"Error getting job details: {str(e)}"
 
 def run_inference(settings: Dynaconf,
-                 bedrock_client: boto3.client,
+                 client: boto3.client,
                  model_name: str,
-                 upload_to_s3: bool = False) -> None:
+                 upload_to_s3: bool = False,
+                 endpoint_type: str = 'bedrock') -> None:
     """Run inference on sentences using the specified model"""
     try:
         df = load_latest_dataset()
@@ -158,30 +167,42 @@ def run_inference(settings: Dynaconf,
         ''')
         
         # Get tone-specific prompt
+
+        prompts_module = import_module(f"prompts.prompt_tones")
+
         tone_prompt = getattr(prompts_module, f"{tone.capitalize()}Prompt")
         
         # Get unique inputs for this tone
         queries = df[df['tone'] == tone]['synthetic_data'].unique()
         
         # Format prompts
-        prompts = [format_prompt_as_xml(text, tone_prompt()) for text in tqdm(queries)]
-        print(f"Processing {len(queries)} unique inputs for tone: {tone}")
-        print(f"Sample prompt:\n{prompts[0]}")
         
-        # Run batch inference using concurrent processing
+        print(f"Processing {len(queries)} unique inputs for tone: {tone}")
+        
+        # Run batch inference using appropriate method
         n = len(queries)
-        outputs = batch_get_completions(
-            settings.model, 
-            bedrock_client, 
-            prompts, 
-            [master_sys_prompt] * n
-        )
+        if endpoint_type == 'bedrock':
+            prompts = [format_prompt_as_xml(text, tone_prompt()) for text in tqdm(queries)]
+            print(f"Sample prompt:\n{prompts[0]}")
+            outputs = batch_get_completions(
+                settings.model, 
+                client, 
+                prompts, 
+                [master_sys_prompt] * n
+            )
+        else:  # sagemaker
+            tokenizer = AutoTokenizer.from_pretrained(settings.hf_name, trust_remote_code=True)
+            prompts = [format_prompt(text, tone_prompt(), tokenizer) for text in tqdm(queries)]
+            print(f"Sample prompt:\n{prompts[0]}")
+            outputs = [invoke_sagemaker_endpoint(
+                {"inputs": prompt}
+                # endpoint_name=settings.model
+            ) for prompt in tqdm(prompts)]
         
         # Update DataFrame with results
         for query, output in zip(queries, outputs):
             mask = (df['synthetic_data'] == query) & (df['tone'] == tone)
-            # Strip quotes from the output if present
-            cleaned_output = output.strip().strip('"')  # Removes both leading/trailing quotes
+            cleaned_output = output.strip().strip('"')
             df.loc[mask, 'rewrite'] = cleaned_output
             df.loc[mask, 'inference_model'] = model_name
     
@@ -204,22 +225,38 @@ def main():
         environments=True
     )
     
-    # Replace AWS account placeholder in model ARN
-    settings.model = settings.model.format(aws_account=args.aws_account)
-    
-    # Initialize bedrock client
-    bedrock_client = boto3.client(
-        service_name='bedrock-runtime', 
-        region_name=settings.region
-    )
-    
     if args.action == 'generate':
+        if not args.aws_account:
+            parser.error("--aws-account is required for generate action")
+        # Replace AWS account placeholder in model ARN
+        settings.model = settings.model.format(aws_account=args.aws_account)
+        
+        # Initialize bedrock client
+        bedrock_client = boto3.client(
+            service_name='bedrock-runtime', 
+            region_name=settings.region
+        )
+        
         if args.type == 'all':
             generate_all_datasets(settings, bedrock_client, args.model, args.upload_s3)
         else:
             generate_specific_dataset(settings, bedrock_client, args.type, args.model, args.upload_s3)
+            
     elif args.action == 'inference':
-        run_inference(settings, bedrock_client, args.model, args.upload_s3)
+        if args.endpoint_type == 'bedrock':
+            if not args.aws_account:
+                parser.error("--aws-account is required for bedrock endpoint")
+            # Replace AWS account placeholder in model ARN
+            settings.model = settings.model.format(aws_account=args.aws_account)
+            client = boto3.client(
+                service_name='bedrock-runtime', 
+                region_name=settings.region
+            )
+        else:  # sagemaker
+            settings.model = args.model  # Use model name directly as endpoint name
+            client = None  # Not needed for SageMaker endpoint
+            
+        run_inference(settings, client, args.model, args.upload_s3, endpoint_type=args.endpoint_type)
 
 if __name__ == "__main__":
     main() 

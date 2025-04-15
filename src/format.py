@@ -5,7 +5,7 @@
 from xml.etree.ElementTree import Element, SubElement, tostring
 import xml.dom.minidom
 
-def format_prompt(messages, usr_prompt, tokenizer):
+def format_prompt(usr_prompt, prompt, tokenizer):
     """
     Format prompts according to each model's prompt guidelines (e.g. xml tags for Haiku). 
     
@@ -13,8 +13,15 @@ def format_prompt(messages, usr_prompt, tokenizer):
     :param usr_prompt: User prompt
     :param tokenizer: The models's Transformer tokenizer.
     """
+
+    sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
+    messages = []
+    for k,v in prompt.examples[0].items():
+        messages.extend([{"role": k, "content": v}])
+    usr_prompt = [{"role": "user", "content": usr_prompt}]
+
     text = tokenizer.apply_chat_template(
-        messages + [{"role": "user", "content": usr_prompt}],
+        sys_prompt + messages + usr_prompt,
         tokenize=False,
         add_generation_prompt=True
     )

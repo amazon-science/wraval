@@ -18,3 +18,12 @@ model = 'amazon.nova-lite-v1:0'
 
 [haiku-3-5-cross]
 model = "arn:aws:bedrock:us-east-1:{aws_account}:inference-profile/us.anthropic.claude-3-5-haiku-20241022-v1:0"
+
+[phi-3-5-4B]
+model = "Phi-3-5-mini-instruct"
+hf_name = "microsoft/Phi-3.5-mini-instruct"
+
+[qwen-2-5-1-5B]
+model = "Qwen2-5-1-5B-Instruct"
+hf_name = "Qwen/Qwen2.5-1.5B-Instruct"
+
