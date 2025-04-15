@@ -4,19 +4,6 @@ import pandas as pd
 import boto3
 import tempfile
 
-"""
-Notes eetsala:
-
-- Appending to latest file can cause duplicated lines, and it's unclear 
-when we want to append and when not in the final workflow. I would propose that
-we don't do it here. That would simplify the save function a lot, and give it a single 
-responsibility. We can think about the append logic later and how we would like to do that.
-Maybe we don't need to append to the same file, but instead assume that all the files are disjoint.
-Then we could read multiple files instead of one in case we want to.
-That way we wouldn't need to deal with duplicates.
-- Do we need to append timestamps here or do we assume that they already come with timestamps?
-"""
-
 def write_dataset_to_s3(
     df: pd.DataFrame,
     bucket: str,
