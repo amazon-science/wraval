@@ -1,11 +1,8 @@
 import boto3
 from dynaconf import Dynaconf
-from src.data_generator import generate_dataset, PROMPT_MAP
-from src.data_utils import save_dataset, load_latest_dataset
-import os
+from src.data_generator import generate_dataset
+from src.data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
 import argparse
-from typing import List
-import pandas as pd
 from src.completion import (
     batch_get_completions, 
     invoke_sagemaker_endpoint
@@ -13,33 +10,31 @@ from src.completion import (
 from src.format import format_prompt_as_xml, format_prompt
 from src.prompt_tones import master_sys_prompt
 from tqdm import tqdm
-import json
-import time
-from importlib import import_module
+import os
 from transformers import AutoTokenizer
+import pandas as pd
+from src.completion import batch_get_completions
+from src.format import format_prompt_as_xml
+from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
+from tqdm import tqdm
 
 def setup_argparse() -> argparse.ArgumentParser:
     """Setup command line argument parser"""
     parser = argparse.ArgumentParser(description='WRAVAL - Writing Assistant Evaluation Tool')
     
-    # Main action argument
-    parser.add_argument('action', choices=['generate', 'inference'],
+    parser.add_argument('action', choices=['generate', 'inference', 'human_eval_upload', 'human_eval_parsing'],
                       help='Action to perform (generate data or run inference)')
     
-    # Dataset type argument
-    parser.add_argument('--type', '-t', choices=list(PROMPT_MAP.keys()) + ['all'],
+    parser.add_argument('--type', '-t', choices=get_all_tones()+['all'],
                       default='all',
                       help='Type of dataset to generate (default: all)')
     
-    # Model argument
     parser.add_argument('--model', '-m', default='haiku-3',
                       help='Model to use (default: haiku-3)')
-    
-    # AWS account argument
-    parser.add_argument('--aws-account', required=False,
+
+    parser.add_argument('--aws-account', required=True,
                       help='AWS account number for Bedrock ARN')
     
-    # S3 upload argument
     parser.add_argument('--upload-s3', action='store_true',
                       help='Upload generated datasets to S3')
     
@@ -52,16 +47,16 @@ def setup_argparse() -> argparse.ArgumentParser:
 def generate_all_datasets(settings: Dynaconf, 
                          bedrock_client: boto3.client,
                          model_name: str,
-                         upload_to_s3: bool = False) -> None:
+                         upload_s3: bool) -> None:
     """Generate all available dataset types"""
     all_data = []
     
-    for dataset_type in PROMPT_MAP.keys():
+    for dataset_type in get_all_tones():
         print(f"Generating {dataset_type}...")
         raw_output, df = generate_dataset(
             settings.model,
-            bedrock_client,
-            dataset_type
+            Tone(dataset_type),
+            bedrock_client
         )
         
         # Add metadata with new column names
@@ -79,37 +74,29 @@ def generate_all_datasets(settings: Dynaconf,
     # Combine all datasets
     combined_df = pd.concat(all_data, ignore_index=True)
     
-    # Save with append behavior
-    save_dataset(
-        combined_df, 
-        upload_to_s3=upload_to_s3,
-        append=True
-    )
+    write_dataset_local(combined_df, "data", "all")
+    if upload_s3:
+        write_dataset_to_s3(df, settings.s3_bucket, "generate/all", "csv")
 
 def generate_specific_dataset(settings: Dynaconf, 
                             bedrock_client: boto3.client, 
                             dataset_type: str,
                             model_name: str,
-                            upload_to_s3: bool = False) -> None:
+                            upload_s3: bool) -> None:
     """Generate a specific dataset type"""
     print(f"Generating {dataset_type}...")
     raw_output, df = generate_dataset(
         settings.model,
-        bedrock_client,
-        dataset_type
+        Tone(dataset_type),
+        bedrock_client
     )
     
-    # Add metadata with new column names
-    df['tone'] = dataset_type.replace('_sentences', '')
+    df['tone'] = dataset_type
     df['synthetic_model'] = model_name
     
-    # Save the dataset with all-tones prefix
-    save_dataset(
-        df, 
-        prefix="all-tones",
-        upload_to_s3=upload_to_s3,
-        append=True
-    )
+    write_dataset_local(df, "data", dataset_type)
+    if upload_s3:
+        write_dataset_to_s3(df, settings.s3_bucket, f"generate/{dataset_type}", "csv")
     
     # Save raw output for reference
     raw_filename = f"{dataset_type}_raw.txt"
@@ -138,7 +125,7 @@ def get_job_error_details(bedrock, job_arn):
 def run_inference(settings: Dynaconf,
                  client: boto3.client,
                  model_name: str,
-                 upload_to_s3: bool = False,
+                 upload_s3: bool,
                  endpoint_type: str = 'bedrock') -> None:
     """Run inference on sentences using the specified model"""
     try:
@@ -166,20 +153,16 @@ def run_inference(settings: Dynaconf,
         ---------------------
         ''')
         
-        # Get tone-specific prompt
-
-        prompts_module = import_module(f"prompts.prompt_tones")
-
-        tone_prompt = getattr(prompts_module, f"{tone.capitalize()}Prompt")
+        tone_prompt = get_prompt(Tone(tone))
         
-        # Get unique inputs for this tone
         queries = df[df['tone'] == tone]['synthetic_data'].unique()
-        
-        # Format prompts
-        
+                
         print(f"Processing {len(queries)} unique inputs for tone: {tone}")
         
-        # Run batch inference using appropriate method
+        prompts = [format_prompt_as_xml(text, tone_prompt()) for text in tqdm(queries)]
+        print(f"Processing {len(queries)} unique inputs for tone: {tone}")
+        print(f"Sample prompt:\n{prompts[0]}")
+        
         n = len(queries)
         if endpoint_type == 'bedrock':
             prompts = [format_prompt_as_xml(text, tone_prompt()) for text in tqdm(queries)]
@@ -199,30 +182,31 @@ def run_inference(settings: Dynaconf,
                 # endpoint_name=settings.model
             ) for prompt in tqdm(prompts)]
         
-        # Update DataFrame with results
         for query, output in zip(queries, outputs):
             mask = (df['synthetic_data'] == query) & (df['tone'] == tone)
             cleaned_output = output.strip().strip('"')
             df.loc[mask, 'rewrite'] = cleaned_output
             df.loc[mask, 'inference_model'] = model_name
     
-    # Save updated dataset
-    save_dataset(
-        df,
-        prefix='all-tones',
-        upload_to_s3=upload_to_s3,
-        append=False
-    )
+    write_dataset_local(df, "data", "all-tones")
+    if upload_s3:
+        write_dataset_to_s3(df, settings.s3_bucket, "inference/all", "csv")
 
 def main():
     parser = setup_argparse()
     args = parser.parse_args()
     
-    # Load settings using Dynaconf with specified model
     settings = Dynaconf(
         settings_files=["settings.toml"], 
         env=args.model,
         environments=True
+    )
+    
+    settings.model = settings.model.format(aws_account=args.aws_account)
+    
+    bedrock_client = boto3.client(
+        service_name='bedrock-runtime', 
+        region_name=settings.region
     )
     
     if args.action == 'generate':

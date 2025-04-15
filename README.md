@@ -29,19 +29,19 @@ Generate synthetic data for tone transformation using various LLMs. Data is save
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-python main.py generate --type witty_sentences --model nova-lite
+python main.py generate --type witty --model nova-lite
 ```
 
 ### Available Tone Types
-- `witty_sentences`: Factual sentences to be made witty
-- `professional_sentences`: Casual sentences to be made professional
-- `casual_sentences`: Formal sentences to be made casual
-- `elaborate_sentences`: Simple sentences to be made detailed
-- `shorten_sentences`: Wordy sentences to be made concise
-- `improve_sentences`: Poorly written sentences to be improved
-- `keypoints_sentences`: Detailed paragraphs for key point extraction
-- `proofread_sentences`: Sentences with errors to be corrected
-- `emojify_sentences`: Plain sentences to be enhanced with emojis
+- `witty`: Factual sentences to be made witty
+- `professional`: Casual sentences to be made professional
+- `casual`: Formal sentences to be made casual
+- `elaborate`: Simple sentences to be made detailed
+- `shorten`: Wordy sentences to be made concise
+- `improve`: Poorly written sentences to be improved
+- `keypoints`: Detailed paragraphs for key point extraction
+- `proofread`: Sentences with errors to be corrected
+- `emojify`: Plain sentences to be enhanced with emojis
 - `paragraph_summary`: Paragraph-summary pairs
 
 ### Output

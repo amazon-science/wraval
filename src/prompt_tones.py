@@ -3,7 +3,47 @@
 # // SPDX-License-Identifier: Apache-2.0
 #
 from src.format import format_prompt
+from enum import Enum
 
+class Tone(Enum):
+    EMOJIFY = "emojify"
+    PROFESSIONAL = "professional"
+    SHORTEN = "shorten"
+    WITTY = "witty"
+    CASUAL = "casual"
+    ELABORATE = "elaborate"
+    PROOFREAD = "proofread"
+    IMPROVE = "improve"
+    KEYPOINTS = "keypoints"
+    SUMMARIZE = "summarize"
+
+def get_all_tones():
+    return [tone.value.lower() for tone in Tone]
+
+def get_prompt(tone: Tone):
+    match tone:
+        case Tone.EMOJIFY:
+            return EmojifyPrompt()
+        case Tone.PROFESSIONAL:
+            return ProfessionalPrompt()
+        case Tone.SHORTEN:
+            return ShortenPrompt()
+        case Tone.WITTY:
+            return WittyPrompt()
+        case Tone.CASUAL:
+            return CasualPrompt()
+        case Tone.ELABORATE:
+            return ElaboratePrompt()
+        case Tone.PROOFREAD:
+            return ProofreadPrompt()
+        case Tone.IMPROVE:
+            return ImprovePrompt()
+        case Tone.KEYPOINTS:
+            return KeypointsPrompt()
+        case Tone.SUMMARIZE:
+            return SummarizePrompt()
+        case _:
+            raise ValueError(f"Unknown tone: {tone}")
 
 master_sys_prompt = "You are now a writing assistant. You will help users write. Rewrite the following text for the given prompt. Just return the result and do not add comments. Do not assume anything about the user. Do not answer any questions about yourself, only rewrite the question. Do not repeat the input text in the output."
 
@@ -120,22 +160,3 @@ def format_prompt(messages, usr_prompt, tokenizer):
 def generate_prompt_for_input(input_text, prompt_obj, tokenizer):
     messages = prompt_obj.get_messages()
     return format_prompt(messages, input_text, tokenizer)
-
-def get_change_tone_prompt(tone, input_text, tokenizer):
-    prompts = {
-        "EMOJIFY": EmojifyPrompt(),
-        "PROFESSIONAL": ProfessionalPrompt(),
-        "SHORTEN": ShortenPrompt(),
-        "WITTY": WittyPrompt(),
-        "CASUAL": CasualPrompt(),
-        "ELABORATE": ElaboratePrompt(),
-        "PROOFREAD": ProofreadPrompt(),
-        "IMPROVE": ImprovePrompt(),
-        "KEYPOINTS": KeypointsPrompt()
-    }
-    
-    prompt_obj = prompts.get(tone)
-    if prompt_obj:
-        return generate_prompt_for_input(input_text, prompt_obj, tokenizer)
-    else:
-        raise ValueError(f"Unknown tone: {tone}")

@@ -2,114 +2,74 @@ import os
 from datetime import datetime
 import pandas as pd
 import boto3
-from typing import Optional, Union
-from pathlib import Path
+import tempfile
 
-def save_dataset(
-    df: pd.DataFrame, 
-    prefix: str = "all-tones",
-    data_dir: str = "~/data",
-    upload_to_s3: bool = False,
-    bucket_name: Optional[str] = "",
-    s3_prefix: str = "eval/tones",
-    append: bool = True  # New parameter to control append behavior
+"""
+Notes eetsala:
+
+- Appending to latest file can cause duplicated lines, and it's unclear 
+when we want to append and when not in the final workflow. I would propose that
+we don't do it here. That would simplify the save function a lot, and give it a single 
+responsibility. We can think about the append logic later and how we would like to do that.
+Maybe we don't need to append to the same file, but instead assume that all the files are disjoint.
+Then we could read multiple files instead of one in case we want to.
+That way we wouldn't need to deal with duplicates.
+- Do we need to append timestamps here or do we assume that they already come with timestamps?
+"""
+
+def write_dataset_to_s3(
+    df: pd.DataFrame,
+    bucket: str,
+    key_prefix: str,
+    format: str
 ) -> str:
-    """
-    Save a dataset with timestamp and optionally upload to S3
-    
-    Args:
-        df: DataFrame to save
-        prefix: Prefix for the filename (default: "all-tones")
-        data_dir: Local directory to save data (default: "~/data")
-        upload_to_s3: Whether to upload to S3 (default: False)
-        bucket_name: S3 bucket name
-        s3_prefix: Prefix for S3 key (default: "eval/tones")
-        append: Whether to append to existing file if found (default: True)
-    
-    Returns:
-        str: Path to the saved file
-    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.jsonl")
+        df.to_json(
+            temp_file, 
+            orient="records", 
+            lines=bool(format=="jsonl")
+        )
+        s3_client = boto3.client('s3')
+        key = add_timestamp_to_file_prefix(key_prefix, format)
+        print(f"Writing dataset to bucket {bucket} and key {key}.")
+        s3_client.upload_file(temp_file, bucket, key)
+    return f"s3://{bucket}/{key}"
+
+def write_dataset_local(
+    df: pd.DataFrame,
+    data_dir: str,
+    file_prefix: str
+) -> str:
     # Expand home directory and create if needed
     data_dir = os.path.expanduser(data_dir)
     os.makedirs(data_dir, exist_ok=True)
     
-    # Try to find existing file if append is True
-    existing_df = None
-    if append:
-        try:
-            existing_df = load_latest_dataset(data_dir, prefix=prefix)
-            print(f"Found existing dataset with {len(existing_df)} rows")
-            # Combine with new data
-            df = pd.concat([existing_df, df], ignore_index=True)
-            print(f"Combined dataset has {len(df)} rows")
-        except FileNotFoundError:
-            print("No existing dataset found, creating new file")
-    
-    # Generate timestamp and filename
+    output_path = os.path.join(
+        data_dir, 
+        add_timestamp_to_file_prefix(file_prefix, "csv")
+    )
+    df.to_csv(output_path, index=False)
+    print(f"Saved to {output_path}")
+    return output_path
+
+def add_timestamp_to_file_prefix(file_prefix, format):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{prefix}-{timestamp}.csv"
-    filepath = os.path.join(data_dir, filename)
-    
-    # Save locally
-    df.to_csv(filepath, index=False)
-    print(f"Saved to {filepath}")
-    
-    # Upload to S3 if requested
-    if upload_to_s3:
-        if not bucket_name:
-            raise ValueError("bucket_name must be provided when upload_to_s3 is True")
-        
-        s3 = boto3.client('s3')
-        s3_key = f"{s3_prefix}/{filename}"
-        s3.upload_file(Filename=filepath, Bucket=bucket_name, Key=s3_key)
-        print(f"Uploaded to s3://{bucket_name}/{s3_key}")
-    
-    return filepath
+    return f"{file_prefix}-{timestamp}.{format.lower()}"
 
 def load_latest_dataset(
-    data_dir: str = "~/data",
-    prefix: Optional[str] = "all-tones",
-    n_latest: int = 1
-) -> Union[pd.DataFrame, list[pd.DataFrame]]:
-    """
-    Load the latest dataset(s) from the data directory
-    
-    Args:
-        data_dir: Directory containing the data files (default: "~/data")
-        prefix: Optional prefix to filter files (default: None)
-        n_latest: Number of latest files to load (default: 1)
-    
-    Returns:
-        Union[pd.DataFrame, list[pd.DataFrame]]: Single DataFrame if n_latest=1, 
-        otherwise list of DataFrames sorted by timestamp (newest first)
-    
-    Raises:
-        FileNotFoundError: If no matching files are found
-    """
-    # Expand home directory
+    data_dir: str,
+) -> pd.DataFrame:
     data_dir = os.path.expanduser(data_dir)
     
-    # List and filter files
     files = []
     for f in os.listdir(data_dir):
         if not f.endswith('.csv'):
             continue
-        if prefix and not f.startswith(prefix):
-            continue
         files.append(f)
     
     if not files:
-        raise FileNotFoundError(
-            f"No CSV files found in {data_dir}" + 
-            (f" with prefix '{prefix}'" if prefix else "")
-        )
-    
-    # Sort files by name (which includes timestamp)
-    files = sorted(files, reverse=True)
-    
-    # Load the requested number of files
-    files = files[:n_latest]
-    dfs = [pd.read_csv(os.path.join(data_dir, f)) for f in files]
-    
-    # Return single DataFrame if n_latest=1, otherwise return list
-    return dfs[0] if n_latest == 1 else dfs 
+        raise FileNotFoundError(f"No CSV files found in {data_dir}")
+
+    file_path = sorted(files, reverse=True)[0]
+    return pd.read_csv(os.path.join(data_dir, file_path))
