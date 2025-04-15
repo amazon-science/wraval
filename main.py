@@ -20,35 +20,54 @@ from tqdm import tqdm
 
 def setup_argparse() -> argparse.ArgumentParser:
     """Setup command line argument parser"""
-    parser = argparse.ArgumentParser(description='WRAVAL - Writing Assistant Evaluation Tool')
+    parser = argparse.ArgumentParser(
+        description='WRAVAL - Writing Assistant Evaluation Tool'
+    )
     
-    parser.add_argument('action', choices=['generate', 'inference', 'human_eval_upload', 'human_eval_parsing'],
-                      help='Action to perform (generate data or run inference)')
+    parser.add_argument(
+        'action', 
+        choices= [
+            'generate', 
+            'inference', 
+            'human_eval_upload', 
+            'human_eval_parsing'
+        ],
+        help='Action to perform (generate data or run inference)'
+    )
     
-    parser.add_argument('--type', '-t', choices=get_all_tones()+['all'],
-                      default='all',
-                      help='Type of dataset to generate (default: all)')
+    parser.add_argument(
+        '--type', '-t', 
+        choices=get_all_tones() + ['all'],
+        default='all',
+        help='Type of dataset to generate (default: all)'
+    )
     
     parser.add_argument('--model', '-m', default='haiku-3',
-                      help='Model to use (default: haiku-3)')
+        help='Model to use (default: haiku-3)'
+    )
 
     parser.add_argument('--aws-account', required=True,
-                      help='AWS account number for Bedrock ARN')
+        help='AWS account number for Bedrock ARN'
+    )
     
     parser.add_argument('--upload-s3', action='store_true',
-                      help='Upload generated datasets to S3')
+        help='Upload generated datasets to S3'
+    )
     
-    # Endpoint type argument
-    parser.add_argument('--endpoint-type', choices=['bedrock', 'sagemaker'], default='bedrock',
-                      help='Type of endpoint to use (default: bedrock)')
-    
+    parser.add_argument(
+        '--endpoint-type', 
+        choices=['bedrock', 'sagemaker'], 
+        default='bedrock',
+        help='Type of endpoint to use (default: bedrock)'
+    )
     return parser
 
-def generate_all_datasets(settings: Dynaconf, 
-                         bedrock_client: boto3.client,
-                         model_name: str,
-                         upload_s3: bool) -> None:
-    """Generate all available dataset types"""
+def generate_all_datasets(
+    settings: Dynaconf, 
+    bedrock_client: boto3.client,
+    model_name: str,
+    upload_s3: bool
+) -> None:
     all_data = []
     
     for dataset_type in get_all_tones():
@@ -59,31 +78,28 @@ def generate_all_datasets(settings: Dynaconf,
             bedrock_client
         )
         
-        # Add metadata with new column names
         df['tone'] = dataset_type.replace('_sentences', '')
         df['synthetic_model'] = model_name
         all_data.append(df)
-        
-        # Save raw output for reference
         raw_filename = f"{dataset_type}_raw.txt"
         data_dir = os.path.expanduser('~/data')
         os.makedirs(data_dir, exist_ok=True)
         with open(os.path.join(data_dir, raw_filename), 'w') as f:
             f.write(raw_output)
     
-    # Combine all datasets
     combined_df = pd.concat(all_data, ignore_index=True)
     
     write_dataset_local(combined_df, "data", "all")
     if upload_s3:
         write_dataset_to_s3(df, settings.s3_bucket, "generate/all", "csv")
 
-def generate_specific_dataset(settings: Dynaconf, 
-                            bedrock_client: boto3.client, 
-                            dataset_type: str,
-                            model_name: str,
-                            upload_s3: bool) -> None:
-    """Generate a specific dataset type"""
+def generate_specific_dataset(
+    settings: Dynaconf, 
+    bedrock_client: boto3.client, 
+    dataset_type: str,
+    model_name: str,
+    upload_s3: bool
+) -> None:
     print(f"Generating {dataset_type}...")
     raw_output, df = generate_dataset(
         settings.model,
@@ -122,11 +138,13 @@ def get_job_error_details(bedrock, job_arn):
     except Exception as e:
         return f"Error getting job details: {str(e)}"
 
-def run_inference(settings: Dynaconf,
-                 client: boto3.client,
-                 model_name: str,
-                 upload_s3: bool,
-                 endpoint_type: str = 'bedrock') -> None:
+def run_inference(
+    settings: Dynaconf,
+    client: boto3.client,
+    model_name: str,
+    upload_s3: bool,
+    endpoint_type: str = 'bedrock'
+) -> None:
     """Run inference on sentences using the specified model"""
     try:
         df = load_latest_dataset()
@@ -135,17 +153,14 @@ def run_inference(settings: Dynaconf,
         print("No dataset found. Please generate data first.")
         return
 
-    # Initialize new columns if they don't exist
     if 'rewrite' not in df.columns:
         df['rewrite'] = None
     if 'inference_model' not in df.columns:
         df['inference_model'] = None
 
-    # Get unique tones
     tones = df['tone'].unique()
     print(f"Found tones: {tones}")
     
-    # Process each tone
     for tone in tones:
         print(f'''
         ---------------------
@@ -212,25 +227,24 @@ def main():
     if args.action == 'generate':
         if not args.aws_account:
             parser.error("--aws-account is required for generate action")
-        # Replace AWS account placeholder in model ARN
         settings.model = settings.model.format(aws_account=args.aws_account)
         
-        # Initialize bedrock client
         bedrock_client = boto3.client(
             service_name='bedrock-runtime', 
             region_name=settings.region
         )
         
         if args.type == 'all':
-            generate_all_datasets(settings, bedrock_client, args.model, args.upload_s3)
+            generate_all_datasets(
+                settings, bedrock_client, args.model, args.upload_s3)
         else:
-            generate_specific_dataset(settings, bedrock_client, args.type, args.model, args.upload_s3)
+            generate_specific_dataset(
+                settings, bedrock_client, args.type, args.model, args.upload_s3)
             
     elif args.action == 'inference':
         if args.endpoint_type == 'bedrock':
             if not args.aws_account:
                 parser.error("--aws-account is required for bedrock endpoint")
-            # Replace AWS account placeholder in model ARN
             settings.model = settings.model.format(aws_account=args.aws_account)
             client = boto3.client(
                 service_name='bedrock-runtime', 
