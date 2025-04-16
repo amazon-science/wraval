@@ -5,6 +5,7 @@
 import time
 import random
 from botocore.exceptions import ClientError
+from src.prompt_tones import Prompt
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
@@ -23,7 +24,7 @@ def extract_last_assistant_response(data):
     else:
         return data
 
-def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retries=3, initial_delay=1):
+def get_completion(modelId: str, bedrock_client: boto3.client, prompt: Prompt, system_prompt=None, max_retries=3, initial_delay=1):
     for attempt in range(max_retries):
         try:
             inference_config = {
@@ -37,14 +38,14 @@ def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retr
                 }
                 converse_api_params = {
                     "modelId": modelId,
-                    "messages": [{"role": "user", "content": [{"text": prompt}]}],
+                    "messages": [{"role": "user", "content": [{"text": prompt.sys_prompt}]}],
                     "inferenceConfig": inference_config,
                     "additionalModelRequestFields": additional_model_fields
                 }
             else:
                 converse_api_params = {
                     "modelId": modelId,
-                    "messages": [{"role": "user", "content": [{"text": prompt}]}],
+                    "messages": [{"role": "user", "content": [{"text": prompt.sys_prompt}]}],
                     "inferenceConfig": inference_config
                 }        
             
