@@ -1,6 +1,5 @@
 import boto3
 from dynaconf import Dynaconf
-from src.data_generator import generate_dataset
 from src.data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
 import argparse
 from src.completion import batch_get_completions, invoke_sagemaker_endpoint
@@ -14,6 +13,7 @@ from src.completion import batch_get_completions
 from src.format import format_prompt_as_xml
 from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
 from tqdm import tqdm
+from src.action_generate import generate_all_datasets, generate_specific_dataset
 
 
 def setup_argparse() -> argparse.ArgumentParser:
@@ -41,6 +41,10 @@ def setup_argparse() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--number-of-samples", "-n", default=100, help="Number of samples to generate (default:100)"
+    )
+
+    parser.add_argument(
         "--aws-account", required=True, help="AWS account number for Bedrock ARN"
     )
 
@@ -57,76 +61,6 @@ def setup_argparse() -> argparse.ArgumentParser:
     return parser
 
 
-def generate_all_datasets(
-    settings: Dynaconf, bedrock_client: boto3.client, model_name: str, upload_s3: bool
-) -> None:
-    all_data = []
-
-    for dataset_type in get_all_tones():
-        print(f"Generating {dataset_type}...")
-        raw_output, df = generate_dataset(
-            settings.model, Tone(dataset_type), bedrock_client
-        )
-
-        df["tone"] = dataset_type.replace("_sentences", "")
-        df["synthetic_model"] = model_name
-        all_data.append(df)
-        raw_filename = f"{dataset_type}_raw.txt"
-        data_dir = os.path.expanduser("~/data")
-        os.makedirs(data_dir, exist_ok=True)
-        with open(os.path.join(data_dir, raw_filename), "w") as f:
-            f.write(raw_output)
-
-    combined_df = pd.concat(all_data, ignore_index=True)
-
-    write_dataset_local(combined_df, "data", "all")
-    if upload_s3:
-        write_dataset_to_s3(df, settings.s3_bucket, "generate/all", "csv")
-
-
-def generate_specific_dataset(
-    settings: Dynaconf,
-    bedrock_client: boto3.client,
-    dataset_type: str,
-    model_name: str,
-    upload_s3: bool,
-) -> None:
-    print(f"Generating {dataset_type}...")
-    raw_output, df = generate_dataset(
-        settings.model, Tone(dataset_type), bedrock_client
-    )
-
-    df["tone"] = dataset_type
-    df["synthetic_model"] = model_name
-
-    write_dataset_local(df, "data", dataset_type)
-    if upload_s3:
-        write_dataset_to_s3(df, settings.s3_bucket, f"generate/{dataset_type}", "csv")
-
-    # Save raw output for reference
-    raw_filename = f"{dataset_type}_raw.txt"
-    data_dir = os.path.expanduser("~/data")
-    os.makedirs(data_dir, exist_ok=True)
-    with open(os.path.join(data_dir, raw_filename), "w") as f:
-        f.write(raw_output)
-
-
-def get_job_error_details(bedrock, job_arn):
-    """Get detailed error information for a failed job"""
-    try:
-        response = bedrock.get_model_invocation_job(jobIdentifier=job_arn)
-        failure_reason = response.get("failureReason", "No failure reason provided")
-        error_details = {
-            "status": response.get("status"),
-            "failure_reason": failure_reason,
-            "creation_time": response.get("creationTime"),
-            "completion_time": response.get("completionTime"),
-            "input_config": response.get("inputDataConfig"),
-            "output_config": response.get("outputDataConfig"),
-        }
-        return error_details
-    except Exception as e:
-        return f"Error getting job details: {str(e)}"
 
 
 def run_inference(

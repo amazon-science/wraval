@@ -24,7 +24,7 @@ def extract_last_assistant_response(data):
     else:
         return data
 
-def get_completion(modelId: str, bedrock_client: boto3.client, prompt: Prompt, system_prompt=None, max_retries=3, initial_delay=1):
+def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retries=3, initial_delay=1):
     for attempt in range(max_retries):
         try:
             inference_config = {
@@ -32,26 +32,30 @@ def get_completion(modelId: str, bedrock_client: boto3.client, prompt: Prompt, s
                 "maxTokens": 3000
             }
             
+            # Handle prompt as string
+            prompt_text = prompt if isinstance(prompt, str) else prompt.sys_prompt
+            
+            messages = [{"role": "user", "content": [{"text": prompt_text}]}]
+            if system_prompt:
+                messages.insert(0, {"role": "system", "content": system_prompt})
+            
             if 'nova' not in modelId:
                 additional_model_fields = {
                     "top_p": 1,
                 }
                 converse_api_params = {
                     "modelId": modelId,
-                    "messages": [{"role": "user", "content": [{"text": prompt.sys_prompt}]}],
+                    "messages": messages,
                     "inferenceConfig": inference_config,
                     "additionalModelRequestFields": additional_model_fields
                 }
             else:
                 converse_api_params = {
                     "modelId": modelId,
-                    "messages": [{"role": "user", "content": [{"text": prompt.sys_prompt}]}],
+                    "messages": messages,
                     "inferenceConfig": inference_config
                 }        
             
-            if system_prompt:
-                converse_api_params["system"] = [{"text": system_prompt}]
-
             response = bedrock_client.converse(**converse_api_params)
             return response['output']['message']['content'][0]['text']
 
