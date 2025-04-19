@@ -36,9 +36,7 @@ def add_timestamp_to_file_prefix(file_prefix, format):
     return f"{file_prefix}-{timestamp}.{format.lower()}"
 
 
-def load_latest_dataset(
-    data_dir: str,
-) -> pd.DataFrame:
+def load_latest_dataset(data_dir: str) -> pd.DataFrame:
     data_dir = os.path.expanduser(data_dir)
 
     files = []

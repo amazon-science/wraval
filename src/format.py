@@ -5,27 +5,36 @@
 from xml.etree.ElementTree import Element, SubElement, tostring
 import xml.dom.minidom
 
-def format_prompt(usr_prompt, prompt, tokenizer):
+def format_prompt(usr_prompt, prompt, tokenizer=None, type = 'bedrock'):
     """
     Format prompts according to each model's prompt guidelines (e.g. xml tags for Haiku). 
     
     :param messages: List of messages
     :param usr_prompt: User prompt
     :param tokenizer: The models's Transformer tokenizer.
+    :param type: Format for Bedrock or for a HF Sagemaker endpoint.
     """
 
-    sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
-    messages = []
-    for k,v in prompt.examples[0].items():
-        messages.extend([{"role": k, "content": v}])
-    usr_prompt = [{"role": "user", "content": usr_prompt}]
+    if type == 'hf':
+        sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
+        messages = []
+        for k,v in prompt.examples[0].items():
+            messages.extend([{"role": k, "content": v}])
+        usr_prompt = [{"role": "user", "content": usr_prompt}]
 
-    text = tokenizer.apply_chat_template(
-        sys_prompt + messages + usr_prompt,
-        tokenize=False,
-        add_generation_prompt=True
-    )
-    return(text)
+        text = tokenizer.apply_chat_template(
+            sys_prompt + messages + usr_prompt,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        return(text)
+    
+    elif type == 'bedrock':
+        messages = []
+        for k,v in prompt.examples[0].items():
+            messages.extend([{"role": k, "content": [{"text": v}]}])
+        usr_prompt = [{"role": "user", "content": [{"text": usr_prompt}]}]
+        return(messages + usr_prompt)
 
 def format_prompt_as_xml(usr_prompt, prompt):
     """

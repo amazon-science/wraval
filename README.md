@@ -78,3 +78,4 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 - [ ] batch processing for Sagemaker endpoint
 - [ ] uv?
 - [ ] from main.py to setup.py
+- [ ] better sagemaker inference output parsing

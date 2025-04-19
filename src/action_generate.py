@@ -65,7 +65,7 @@ def generate_dataset(model: str,
     
     prompt = PROMPT_MAP[dataset_type]
     print(prompt)
-    raw_output = get_completion(model, bedrock_client, prompt)
+    raw_output = get_completion(model, bedrock_client, prompt)[0]["text"]
     df = process_raw_output(raw_output, dataset_type)
     
     return raw_output, df 
@@ -108,7 +108,7 @@ def generate_all_datasets(
 
     combined_df = pd.concat(all_data, ignore_index=True)
 
-    write_dataset_local(combined_df, "data", "all")
+    write_dataset_local(combined_df, "~/data", "all-tones")
     if upload_s3:
         write_dataset_to_s3(df, settings.s3_bucket, "generate/all", "csv")
 
@@ -128,7 +128,7 @@ def generate_specific_dataset(
     df["tone"] = dataset_type
     df["synthetic_model"] = model_name
 
-    write_dataset_local(df, "data", dataset_type)
+    write_dataset_local(df, "~/data", "all-tones")
     if upload_s3:
         write_dataset_to_s3(df, settings.s3_bucket, f"generate/{dataset_type}", "csv")
 
@@ -136,5 +136,6 @@ def generate_specific_dataset(
     raw_filename = f"{dataset_type}_raw.txt"
     data_dir = os.path.expanduser("~/data")
     os.makedirs(data_dir, exist_ok=True)
+    print(raw_output)
     with open(os.path.join(data_dir, raw_filename), "w") as f:
         f.write(raw_output)

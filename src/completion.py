@@ -33,17 +33,17 @@ def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retr
             }
             
             # Handle prompt as string
-            prompt_text = prompt if isinstance(prompt, str) else prompt.sys_prompt
-            
-            messages = [{"role": "user", "content": [{"text": prompt_text}]}]
-            if system_prompt:
-                messages.insert(0, {"role": "system", "content": system_prompt})
+            if isinstance(prompt, str):
+                messages = [{"role": "user", "content": [{"text": prompt}]}]
+            else:
+                messages = prompt
             
             if 'nova' not in modelId:
                 additional_model_fields = {
                     "top_p": 1,
                 }
                 converse_api_params = {
+                    "system": [{"text": system_prompt}],
                     "modelId": modelId,
                     "messages": messages,
                     "inferenceConfig": inference_config,
@@ -51,6 +51,7 @@ def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retr
                 }
             else:
                 converse_api_params = {
+                    "system": [{"text": system_prompt}],
                     "modelId": modelId,
                     "messages": messages,
                     "inferenceConfig": inference_config
