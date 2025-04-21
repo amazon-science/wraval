@@ -13,6 +13,7 @@ import boto3
 import base64
 import sys
 import re
+import requests
 # Function to extract last assistant response from each entry
 
 
@@ -212,3 +213,24 @@ def invoke_sagemaker_endpoint(payload, endpoint_name="Phi-3-5-mini-instruct", re
         print(f"Error: {str(e)}")
         raise e
 
+
+def invoke_ollama_endpoint(payload,
+                           endpoint_name="phi3",
+                           url="127.0.0.1:11434"):
+
+    request_body = {
+        "prompt": payload,
+        "model": endpoint_name
+    }
+
+    api_url = f"http://{url}/api/generate"
+
+    response = requests.post(api_url, json=request_body)
+
+    r = response.text.split('\n')
+    lines = []
+    for r in r:
+        if r != '':
+            lines.append(json.loads(r))
+
+    return ''.join([l['response'] for l in lines])

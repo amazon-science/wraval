@@ -15,6 +15,7 @@ from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
 from tqdm import tqdm
 from src.action_generate import generate_all_datasets, generate_specific_dataset
 from src.action_inference import run_inference
+from src.action_llm_judge import judge
 
 
 def setup_argparse() -> argparse.ArgumentParser:
@@ -25,7 +26,13 @@ def setup_argparse() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "action",
-        choices=["generate", "inference", "human_eval_upload", "human_eval_parsing"],
+        choices=[
+            "generate",
+            "inference",
+            "llm_judge",
+            "human_judge_upload",
+            "human_judge_parsing"
+            ],
         help="Action to perform (generate data or run inference)",
     )
 
@@ -100,23 +107,48 @@ def main():
         if args.endpoint_type == "bedrock":
             if not args.aws_account:
                 parser.error("--aws-account is required for bedrock endpoint")
-            settings.model = settings.model.format(aws_account=args.aws_account)
+            inference_model = settings.model.format(aws_account=args.aws_account)
             client = boto3.client(
                 service_name="bedrock-runtime", region_name=settings.region
             )
         else:  # sagemaker
-            settings.model = args.model  # Use model name directly as endpoint name
+            if not args.aws_account:
+                parser.error("--aws-account is required for sagemaker endpoint")
+            inference_model = args.model  # Use model name directly as endpoint name
             client = None  # Not needed for SageMaker endpoint
 
         run_inference(
             settings,
             client,
-            args.model,
+            inference_model,
+            args.upload_s3,
+            args.data_dir,
+            args.endpoint_type
+        )
+
+    elif args.action == "llm_judge":        
+        if args.endpoint_type == "bedrock":
+            if not args.aws_account:
+                parser.error("--aws-account is required for bedrock endpoint")
+            judge_model = settings.model.format(aws_account=args.aws_account)
+            client = boto3.client(
+                service_name="bedrock-runtime", region_name=settings.region
+            )
+        else:  # sagemaker
+            judge_model = args.model  # Use model name directly as endpoint name
+            client = None  # Not needed for SageMaker endpoint
+
+        judge(
+            settings,
+            client,
+            judge_model,
             args.upload_s3,
             args.data_dir,
             args.endpoint_type
         )
 
 
+
+        
 if __name__ == "__main__":
     main()

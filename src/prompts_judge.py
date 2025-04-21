@@ -286,3 +286,9 @@ def generate_input_prompt(input_text: str, output_text: str, tone: str) -> str:
     <Tone>{tone}</Tone>
     """
 
+def rewrite_prompt(input_text: str, output_text: str) -> str:
+    return f"""
+    <User>{input_text}</User>
+    <System>{output_text}</System>
+    <Instruction>Score the previous user-assistant interaction. If it is a rewrite, score 1, if it is a back-and-forth conversation, score 0. Just return the score.</Instruction>
+    """

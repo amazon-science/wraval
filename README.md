@@ -9,30 +9,54 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 
 ```bash
 pip install -r requirements.txt
-python main.py generate
+python main.py run_all
 ```
 
-## Structure
+## Step by step
 
-1. Start by generating evaluation data for each of the writing assistant tasks (a.k.a. tones) [here](1. data_generation.ipynb)
-2. You can then use Bedrock hosted models ([here](2.b. Haiku_tones.ipynb)) or self-hosted models ([here](2.a. SLM_tones.ipynb)), to play the role of a writing assistant.
-3. You can use an LLM-as-a-judge to evaluate these models ([here](3. judge_eval.ipynb))
-4. Finally you can setup a Sagemaker Groundtruth tasks [here](4 human_eval.py)
+1. Start by generating evaluation data for each of the writing assistant tasks (a.k.a. tones)
 
-An additional notebook is provided to benchmark models on translation tasks on open datasets [here](Haiku_translate.ipynb).
+```bash
+# By default generates all tone types. A specific tone and model can be specified.
+python main.py generate --aws-account {AWS_ACCOUNT} --type witty --model nova-lite
+```
 
-## Data Generation
+2. You can then use Bedrock hosted models or self-hosted models, to play the role of a writing assistant.
 
-Generate synthetic data for tone transformation using various LLMs. Data is saved to CSV files with timestamps and can optionally be uploaded to S3.
+```bash
+# Bedrock hosted models on all tones
+python main.py inference --aws-account {AWS_ACCOUNT} --model nova-lite --endpoint-type bedrock
+# Self-hosted Sagemaker models on all tones
+python main.py inference --aws-account {AWS_ACCOUNT} --model {MODEL_NAME} --endpoint-type sagemaker
+```
 
-### Basic Usage
+> Note: `MODEL_NAME` uses the proposed mapping in `settings.toml`.
+
+3. You can use an LLM-as-a-judge to evaluate these models
+
+```bash
+# By default generates all tone types. A specific tone and model can be specified.
+python main.py llm_judge --model nova-lite
+```
+
+4. Finally you can make a human-as-a-judge setup with a Sagemaker Groundtruth task
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
 python main.py generate --type witty --model nova-lite
 ```
 
-### Available Tone Types
+> Note: ideally different models are used for each step, to avoid bias.
+
+An additional notebook is provided to benchmark models on translation tasks on open datasets [here](Haiku_translate.ipynb).
+
+## Data
+
+Data is saved to CSV files with timestamps and can optionally be uploaded to S3.
+By default, generated data is saved to `~/data/all-tones-{timestamp}.csv`
+
+## Available Tone Types
+
 - `witty`: Factual sentences to be made witty
 - `professional`: Casual sentences to be made professional
 - `casual`: Formal sentences to be made casual
@@ -44,9 +68,7 @@ python main.py generate --type witty --model nova-lite
 - `emojify`: Plain sentences to be enhanced with emojis
 - `paragraph_summary`: Paragraph-summary pairs
 
-### Output
-- Generated data is saved to `~/data/all-tones-{timestamp}.csv`
-- Raw outputs are saved to `~/data/{tone_type}_raw.txt`
+Feel free to add your own for your own purposes in the prompt files.
 
 ## Notebook quick start
 
@@ -58,8 +80,8 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 
 - [ ] make everything a one-liner
     - [x] 1.pynb
-    - [ ] 2.pynb
-    - [ ] 3.pynb
+    - [x] 2.pynb
+    - [x] 3.pynb
     - [ ] 4a.pynb: 
         - use functions in data_utils
         - read the tones and models from the last csv retrieved via data_utils
@@ -68,14 +90,26 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
         - use functions in data_utils
         - read the tones and models from the last csv retrieved via data_utils
         - refactor into different functions (1) get output data on AWS (2) merge it back into the csv and save (3) plot the LLM judge results VS the human feedback
-- [ ] run Qwen and Phi as standalone sagemaker endpoints.
+- [x] run Qwen and Phi as standalone sagemaker endpoints.
 - [x] requirements.txt. 
 - [x] data
 - [x] 1. data generation -> prompt library
-- [ ] 2.b. LLM -> implement this in a modular way in in format_prompt_as_xml
+- [x] 2.b. LLM -> implement this in a modular way in in format_prompt_as_xml
 - [ ] merge generate_all_datasets and generate_specific_datasets
 - [ ] batch processing for Bedrock
 - [ ] batch processing for Sagemaker endpoint
 - [ ] uv?
 - [ ] from main.py to setup.py
 - [ ] better sagemaker inference output parsing
+- [ ] add a model_router.py
+
+## How to Cite This Repository
+
+```bibtex
+@misc{wraval,
+    author = {Gabriel Benedict, Matthew Butler, Naved Merchant, Eetu Salama-Laine},
+    title = {{WRAVAL – WRiting Assist eVALuation}},
+    howpublished = {\url{https://github.com/amazon-science/wraval}},
+    year = {2025}
+}
+```
