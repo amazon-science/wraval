@@ -2,9 +2,6 @@
 
 WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, professional tone, witty tone, etc.
 
-
-> With the popularity of large language models (LLMs), the focus of Language Model (LM) evaluation strongly shifted to problem solving or reasoning tasks, thus targeting a form of general intelligence. Small Language Models (SLMs) – defined here as LMs under 10B parameters – score low on these forms of LM evaluation, sometimes 3-4 times lower than Large Language Models (LLMs). We show that the performance of many of the most popular representative uses for LLMs in industrial settings, including tone change (e.g., funny, serious, professional), are not accurately reflected by these metrics. This paper proposes an evaluation framework that highlights SLMs' strengths on non-reasoning tasks that do not have a predefined evaluation dataset. We contribute with data generation, prompt-tuning, LLM-as-a-judge; and show how this framework helps highlight the potential of finetuning for a set of specific tasks. Our framework helps practitioners benchmark SLMs or LLMs on tasks they are good at and reinforces their usefulness in edge and private computing.
-
 ## Quick start
 
 ```bash
@@ -14,14 +11,14 @@ python main.py run_all
 
 ## Step by step
 
-1. Start by generating evaluation data for each of the writing assistant tasks (a.k.a. tones)
+### 1. Start by generating evaluation data for each of the writing assistant tasks (a.k.a. tones)
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
 python main.py generate --aws-account {AWS_ACCOUNT} --type witty --model nova-lite
 ```
 
-2. You can then use Bedrock hosted models or self-hosted models, to play the role of a writing assistant.
+### 2. You can then use Bedrock hosted models or self-hosted models, to play the role of a writing assistant.
 
 ```bash
 # Bedrock hosted models on all tones
@@ -32,14 +29,14 @@ python main.py inference --aws-account {AWS_ACCOUNT} --model {MODEL_NAME} --endp
 
 > Note: `MODEL_NAME` uses the proposed mapping in `settings.toml`.
 
-3. You can use an LLM-as-a-judge to evaluate these models
+### 3. You can use an LLM-as-a-judge to evaluate these models
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
 python main.py llm_judge --model nova-lite
 ```
 
-4. Finally you can make a human-as-a-judge setup with a Sagemaker Groundtruth task
+### 4. Finally you can make a human-as-a-judge setup with a Sagemaker Groundtruth task
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
@@ -49,6 +46,11 @@ python main.py generate --type witty --model nova-lite
 > Note: ideally different models are used for each step, to avoid bias.
 
 An additional notebook is provided to benchmark models on translation tasks on open datasets [here](Haiku_translate.ipynb).
+
+## Motivation
+
+With the popularity of large language models (LLMs), the focus of Language Model (LM) evaluation strongly shifted to problem solving or reasoning tasks, thus targeting a form of general intelligence. Small Language Models (SLMs) – defined here as LMs under 10B parameters – score low on these forms of LM evaluation, sometimes 3-4 times lower than Large Language Models (LLMs). We show that the performance of many of the most popular representative uses for LLMs in industrial settings, including tone change (e.g., funny, serious, professional), are not accurately reflected by these metrics. This paper proposes an evaluation framework that highlights SLMs' strengths on non-reasoning tasks that do not have a predefined evaluation dataset. We contribute with data generation, prompt-tuning, LLM-as-a-judge; and show how this framework helps highlight the potential of finetuning for a set of specific tasks. Our framework helps practitioners benchmark SLMs or LLMs on tasks they are good at and reinforces their usefulness in edge and private computing.
+
 
 ## Data
 
