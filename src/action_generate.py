@@ -65,7 +65,8 @@ def generate_dataset(model: str,
     
     prompt = PROMPT_MAP[dataset_type]
     print(prompt)
-    raw_output = get_completion(model, bedrock_client, prompt)[0]["text"]
+    raw_output = get_completion(model, bedrock_client, prompt) #[0]["text"]
+    print(raw_output)
     df = process_raw_output(raw_output, dataset_type)
     
     return raw_output, df 

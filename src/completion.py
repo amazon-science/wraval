@@ -32,31 +32,29 @@ def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retr
                 "temperature": 0.0,
                 "maxTokens": 3000
             }
-            
+
+            converse_api_params = {
+                    "modelId": modelId,
+                    "inferenceConfig": inference_config,
+            }
+
             # Handle prompt as string
             if isinstance(prompt, str):
                 messages = [{"role": "user", "content": [{"text": prompt}]}]
             else:
                 messages = prompt
-            
+
+            converse_api_params.update({"messages": messages})
+
             if 'nova' not in modelId:
-                additional_model_fields = {
-                    "top_p": 1,
-                }
-                converse_api_params = {
-                    "system": [{"text": system_prompt}],
-                    "modelId": modelId,
-                    "messages": messages,
-                    "inferenceConfig": inference_config,
-                    "additionalModelRequestFields": additional_model_fields
-                }
-            else:
-                converse_api_params = {
-                    "system": [{"text": system_prompt}],
-                    "modelId": modelId,
-                    "messages": messages,
-                    "inferenceConfig": inference_config
-                }        
+                converse_api_params.update(
+                    {"additionalModelRequestFields": {"top_p": 1}}
+                )
+
+            if isinstance(system_prompt, str) and len(system_prompt) > 0:
+                converse_api_params.update(
+                    {"system": [{"text": system_prompt}]}
+                )
             
             response = bedrock_client.converse(**converse_api_params)
             return response['output']['message']['content'][0]['text']

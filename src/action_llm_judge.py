@@ -80,12 +80,19 @@ def process_tone_data(
         max_concurrent=len(user_prompts)
     )
     
+    rubrics = [r.lower() for r in rubrics]
+
     # Process scores
     for i, rubric in enumerate(rubrics):
         dmt[rubric] = completions[i::len(rubrics)]
         dmt[f'{rubric}_score'] = dmt[rubric].apply(extract_score)
     
-    dmt['overall_score'] = dmt[[f'{r}_score' for r in rubrics]].mean(axis=1)
+    # Move all score columns to the right
+    score_columns = [f'{r}_score' for r in rubrics]
+    other_columns = [col for col in dmt.columns if col not in score_columns]
+    dmt = dmt[other_columns + score_columns]
+    
+    dmt['overall_score'] = dmt[score_columns].mean(axis=1)
     return dmt
 
 def judge(

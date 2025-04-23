@@ -16,7 +16,7 @@ from tqdm import tqdm
 from src.action_generate import generate_all_datasets, generate_specific_dataset
 from src.action_inference import run_inference
 from src.action_llm_judge import judge
-
+from src.aws_utils import get_current_aws_account_id
 
 def setup_argparse() -> argparse.ArgumentParser:
     """Setup command line argument parser"""
@@ -53,7 +53,7 @@ def setup_argparse() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--aws-account", required=True, help="AWS account number for Bedrock ARN"
+        "--aws-account", required=False, help="AWS account number for Bedrock ARN"
     )
 
     parser.add_argument(
@@ -77,20 +77,24 @@ def main():
     parser = setup_argparse()
     args = parser.parse_args()
 
+    if args.aws_account is None:
+        aws_account = get_current_aws_account_id() 
+    else:
+        aws_account = args.aws_account
+        
+
     settings = Dynaconf(
         settings_files=["settings.toml"], env=args.model, environments=True
     )
 
-    settings.model = settings.model.format(aws_account=args.aws_account)
+    settings.model = settings.model.format(aws_account=aws_account)
 
     bedrock_client = boto3.client(
         service_name="bedrock-runtime", region_name=settings.region
     )
 
     if args.action == "generate":
-        if not args.aws_account:
-            parser.error("--aws-account is required for generate action")
-        settings.model = settings.model.format(aws_account=args.aws_account)
+        settings.model = settings.model.format(aws_account=aws_account)
 
         bedrock_client = boto3.client(
             service_name="bedrock-runtime", region_name=settings.region
@@ -105,15 +109,11 @@ def main():
 
     elif args.action == "inference":
         if args.endpoint_type == "bedrock":
-            if not args.aws_account:
-                parser.error("--aws-account is required for bedrock endpoint")
-            inference_model = settings.model.format(aws_account=args.aws_account)
+            inference_model = settings.model.format(aws_account=aws_account)
             client = boto3.client(
                 service_name="bedrock-runtime", region_name=settings.region
             )
         else:  # sagemaker
-            if not args.aws_account:
-                parser.error("--aws-account is required for sagemaker endpoint")
             inference_model = args.model  # Use model name directly as endpoint name
             client = None  # Not needed for SageMaker endpoint
 
@@ -128,9 +128,7 @@ def main():
 
     elif args.action == "llm_judge":        
         if args.endpoint_type == "bedrock":
-            if not args.aws_account:
-                parser.error("--aws-account is required for bedrock endpoint")
-            judge_model = settings.model.format(aws_account=args.aws_account)
+            judge_model = settings.model.format(aws_account=aws_account)
             client = boto3.client(
                 service_name="bedrock-runtime", region_name=settings.region
             )
@@ -146,9 +144,6 @@ def main():
             args.data_dir,
             args.endpoint_type
         )
-
-
-
         
 if __name__ == "__main__":
     main()

@@ -15,16 +15,16 @@ python main.py run_all
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-python main.py generate --aws-account {AWS_ACCOUNT} --type witty --model nova-lite
+python main.py generate --type witty --model nova-lite
 ```
 
 ### 2. You can then use Bedrock hosted models or self-hosted models, to play the role of a writing assistant.
 
 ```bash
 # Bedrock hosted models on all tones
-python main.py inference --aws-account {AWS_ACCOUNT} --model nova-lite --endpoint-type bedrock
+python main.py inference --model nova-lite --endpoint-type bedrock
 # Self-hosted Sagemaker models on all tones
-python main.py inference --aws-account {AWS_ACCOUNT} --model {MODEL_NAME} --endpoint-type sagemaker
+python main.py inference --model {MODEL_NAME} --endpoint-type sagemaker
 ```
 
 > Note: `MODEL_NAME` uses the proposed mapping in `settings.toml`.
