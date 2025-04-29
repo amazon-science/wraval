@@ -57,7 +57,7 @@ def setup_argparse() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--upload-s3", action="store_true", help="Upload generated datasets to S3"
+        "--upload-s3", default=False, help="Upload generated datasets to S3"
     )
 
     parser.add_argument(
@@ -105,9 +105,9 @@ def main():
                                args.upload_s3)
         else:
             generate_tone_data(settings,
-                               args.type,
                                args.model,
-                               args.upload_s3)
+                               args.upload_s3,
+                               args.type)
 
     elif args.action == "inference":
         if args.endpoint_type == "bedrock":

@@ -19,7 +19,7 @@ from src.model_router import route_completion
 PROMPT_MAP = {
     "witty": WITTY_SENTENCES_PROMPT,
     "professional": PROFESSIONAL_SENTENCES_PROMPT,
-    "summary": PARAGRAPH_SUMMARY_PROMPT,
+    "summarize": PARAGRAPH_SUMMARY_PROMPT,
     "casual": CASUAL_SENTENCES_PROMPT,
     "elaborate": ELABORATE_SENTENCES_PROMPT,
     "shorten": SHORTEN_SENTENCES_PROMPT,
@@ -41,7 +41,7 @@ def generate_dataset(settings,
         dataset_type: Type of dataset to generate. Must be one of:
             - witty
             - professional
-            - summary
+            - summarize
             - casual
             - elaborate
             - shorten
@@ -88,9 +88,9 @@ def process_raw_output(output: str, tone: Tone) -> pd.DataFrame:
 
 def generate_tone_data(
     settings: Dynaconf,
-    tone: str,        
     model_name: str,
-    upload_s3: bool
+    upload_s3: bool,
+    tone = None
 ) -> None:
     d = []
 
