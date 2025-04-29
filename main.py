@@ -80,13 +80,6 @@ def setup_argparse() -> argparse.ArgumentParser:
 def main():
     parser = setup_argparse()
     args = parser.parse_args()
-
-    if args.endpoint_type == "bedrock":
-        if args.aws_account is None:
-            aws_account = get_current_aws_account_id() 
-        else:
-            aws_account = args.aws_account
-        settings.model = settings.model.format(aws_account=aws_account)
         
     settings = Dynaconf(
         settings_files=["settings.toml"], env=args.model, environments=True
@@ -95,7 +88,14 @@ def main():
     settings.endpoint_type = args.endpoint_type
 
     if args.local_tokenizer_path:
-        settings.local_tokenizer_path = args.local_tokenizer_path
+        settings.local_tokenizer_path = args.local_tokenizer_path    
+
+    if args.endpoint_type == "bedrock":
+        if args.aws_account is None:
+            aws_account = get_current_aws_account_id() 
+        else:
+            aws_account = args.aws_account
+        settings.model = settings.model.format(aws_account=aws_account)    
 
     if args.action == "generate":
 
