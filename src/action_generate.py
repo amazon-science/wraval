@@ -13,6 +13,7 @@ import os
 import boto3
 
 from src.data_generation_prompts import *
+from src.model_router import route_completion
 
 # Map dataset types to their corresponding prompts
 PROMPT_MAP = {
@@ -29,8 +30,7 @@ PROMPT_MAP = {
 }
 
 
-def generate_dataset(model: str, 
-                    bedrock_client: Optional[boto3.client] = None,
+def generate_dataset(settings,
                     dataset_type: str = "witty") -> Tuple[str, pd.DataFrame]:
     """
     Generate dataset based on the specified type
@@ -65,10 +65,10 @@ def generate_dataset(model: str,
     
     prompt = PROMPT_MAP[dataset_type]
     print(prompt)
-    raw_output = get_completion(model, bedrock_client, prompt) #[0]["text"]
-    df = process_raw_output(raw_output, dataset_type)
+    raw_output = route_completion(settings, prompt)[0]
+    d = process_raw_output(raw_output, dataset_type)
     
-    return raw_output, df 
+    return d
 
 
 def process_raw_output(output: str, tone: Tone) -> pd.DataFrame:
@@ -88,7 +88,6 @@ def process_raw_output(output: str, tone: Tone) -> pd.DataFrame:
 
 def generate_tone_data(
     settings: Dynaconf,
-    bedrock_client: boto3.client,
     tone: str,        
     model_name: str,
     upload_s3: bool
@@ -98,11 +97,11 @@ def generate_tone_data(
     if tone is None:
         tones = get_all_tones()
     else:
-        tones = tone
+        tones = [tone]
 
-    for tone in tones():
+    for tone in tones:
         print(f"Generating {tone}...")
-        t = generate_dataset(settings.model, bedrock_client, tone)
+        t = generate_dataset(settings, tone)
         t["tone"] = tone
         t["synthetic_model"] = model_name
         d.append(t)

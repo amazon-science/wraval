@@ -27,3 +27,7 @@ hf_name = "microsoft/Phi-3.5-mini-instruct"
 model = "Qwen2-5-1-5B-Instruct"
 hf_name = "Qwen/Qwen2.5-1.5B-Instruct"
 
+[phi-3-ollama]
+model = "Phi-3-5-mini-instruct"
+hf_name = "microsoft/Phi-3.5-mini-instruct"
+

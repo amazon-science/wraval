@@ -14,9 +14,10 @@ import base64
 import sys
 import re
 import requests
+
+
+
 # Function to extract last assistant response from each entry
-
-
 def extract_last_assistant_response(data):
     matches = re.findall(r"<\|assistant\|>(.*?)<\|end\|>", data, re.DOTALL)
     # matches = re.findall(r"<assistant>(.*?)</assistant>", data, re.DOTALL)
@@ -25,7 +26,7 @@ def extract_last_assistant_response(data):
     else:
         return data
 
-def get_completion(modelId, bedrock_client, prompt, system_prompt=None, max_retries=3, initial_delay=1):
+def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_delay=1):
     for attempt in range(max_retries):
         try:
             inference_config = {
@@ -95,9 +96,9 @@ def batch_get_completions(modelId, bedrock_client, prompts, system_prompts=None,
         with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
             futures = [
                 executor.submit(
-                    process_prompt, 
-                    i, 
-                    prompts[i], 
+                    process_prompt,
+                    i,
+                    prompts[i],
                     system_prompts[i]
                 ) for i in range(batch_start, batch_end)
             ]

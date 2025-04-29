@@ -48,7 +48,7 @@ def run_inference(
         """
         )
 
-xb        tone_prompt = get_prompt(Tone(tone))
+        tone_prompt = get_prompt(Tone(tone))
 
         queries = df[df["tone"] == tone]["synthetic_data"].unique()
 

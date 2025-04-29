@@ -5,7 +5,7 @@
 from xml.etree.ElementTree import Element, SubElement, tostring
 import xml.dom.minidom
 
-def format_prompt(usr_prompt, prompt, tokenizer=None, type = 'bedrock'):
+def format_prompt(usr_prompt, prompt=None, tokenizer=None, type = 'bedrock'):
     """
     Format prompts according to each model's prompt guidelines (e.g. xml tags for Haiku). 
     
@@ -16,14 +16,18 @@ def format_prompt(usr_prompt, prompt, tokenizer=None, type = 'bedrock'):
     """
 
     if type == 'hf':
-        sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
-        messages = []
-        for k,v in prompt.examples[0].items():
-            messages.extend([{"role": k, "content": v}])
-        usr_prompt = [{"role": "user", "content": usr_prompt}]
+        if prompt:
+            sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
+            messages = []
+            for k,v in prompt.examples[0].items():
+                messages.extend([{"role": k, "content": v}])
+            usr_prompt = [{"role": "user", "content": usr_prompt}]    
+            p = sys_prompt + messages + usr_prompt
+        else:
+            p = [{"role": "user", "content": usr_prompt}]
 
         text = tokenizer.apply_chat_template(
-            sys_prompt + messages + usr_prompt,
+            p,
             tokenize=False,
             add_generation_prompt=True
         )

@@ -1,15 +1,15 @@
-import boto3
+#
+# // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# // SPDX-License-Identifier: Apache-2.0
+#
 from dynaconf import Dynaconf
 from src.data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
 import argparse
-from src.completion import batch_get_completions, invoke_sagemaker_endpoint
 from src.format import format_prompt_as_xml, format_prompt
 from src.prompt_tones import master_sys_prompt
 from tqdm import tqdm
 import os
-from transformers import AutoTokenizer
 import pandas as pd
-from src.completion import batch_get_completions
 from src.format import format_prompt_as_xml
 from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
 from tqdm import tqdm
@@ -61,51 +61,56 @@ def setup_argparse() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--data-dir", default="~/data", help="Where the data files are stored"
+    )
+    
+    parser.add_argument(
         "--endpoint-type",
-        choices=["bedrock", "sagemaker"],
+        choices=["bedrock", "sagemaker", "ollama"],
         default="bedrock",
         help="Type of endpoint to use (default: bedrock)",
     )
 
     parser.add_argument(
-        "--data-dir", default="~/data", help="Where the data files are stored"
+        "--local-tokenizer-path", required=False, help="Allow for a local path to a tokenizer."
     )
-
+    
     return parser
 
 def main():
     parser = setup_argparse()
     args = parser.parse_args()
 
-    if args.aws_account is None:
-        aws_account = get_current_aws_account_id() 
-    else:
-        aws_account = args.aws_account
+    if args.endpoint_type == "bedrock":
+        if args.aws_account is None:
+            aws_account = get_current_aws_account_id() 
+        else:
+            aws_account = args.aws_account
+        settings.model = settings.model.format(aws_account=aws_account)
         
-
     settings = Dynaconf(
         settings_files=["settings.toml"], env=args.model, environments=True
     )
 
-    settings.model = settings.model.format(aws_account=aws_account)
+    settings.endpoint_type = args.endpoint_type
 
-    bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=settings.region)
+    if args.local_tokenizer_path:
+        settings.local_tokenizer_path = args.local_tokenizer_path
 
     if args.action == "generate":
-        settings.model = settings.model.format(aws_account=aws_account)
-
-        bedrock_client = boto3.client(
-            service_name="bedrock-runtime", region_name=settings.region
-        )
 
         if args.type == "all":
-            generate_tone_data(settings, bedrock_client, args.model, args.upload_s3)
+            generate_tone_data(settings,
+                               args.model,
+                               args.upload_s3)
         else:
-            generate_tone_data(settings, bedrock_client, args.type, args.model, args.upload_s3)
+            generate_tone_data(settings,
+                               args.type,
+                               args.model,
+                               args.upload_s3)
 
     elif args.action == "inference":
         if args.endpoint_type == "bedrock":
-            inference_model = settings.model.format(aws_account=aws_account)
             client = boto3.client(
                 service_name="bedrock-runtime", region_name=settings.region
             )
