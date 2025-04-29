@@ -13,7 +13,7 @@ from src.completion import batch_get_completions
 from src.format import format_prompt_as_xml
 from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
 from tqdm import tqdm
-from src.action_generate import generate_all_datasets, generate_specific_dataset
+from src.action_generate import generate_tone_data
 from src.action_inference import run_inference
 from src.action_llm_judge import judge
 from src.aws_utils import get_current_aws_account_id
@@ -89,9 +89,7 @@ def main():
 
     settings.model = settings.model.format(aws_account=aws_account)
 
-    bedrock_client = boto3.client(
-        service_name="bedrock-runtime", region_name=settings.region
-    )
+    bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=settings.region)
 
     if args.action == "generate":
         settings.model = settings.model.format(aws_account=aws_account)
@@ -101,11 +99,9 @@ def main():
         )
 
         if args.type == "all":
-            generate_all_datasets(settings, bedrock_client, args.model, args.upload_s3)
+            generate_tone_data(settings, bedrock_client, args.model, args.upload_s3)
         else:
-            generate_specific_dataset(
-                settings, bedrock_client, args.type, args.model, args.upload_s3
-            )
+            generate_tone_data(settings, bedrock_client, args.type, args.model, args.upload_s3)
 
     elif args.action == "inference":
         if args.endpoint_type == "bedrock":

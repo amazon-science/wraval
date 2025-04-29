@@ -14,7 +14,6 @@ from src.completion import batch_get_completions
 from src.format import format_prompt_as_xml
 from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
 from tqdm import tqdm
-from src.action_generate import generate_all_datasets, generate_specific_dataset
 
 def run_inference(
     settings: Dynaconf,
@@ -49,7 +48,7 @@ def run_inference(
         """
         )
 
-        tone_prompt = get_prompt(Tone(tone))
+xb        tone_prompt = get_prompt(Tone(tone))
 
         queries = df[df["tone"] == tone]["synthetic_data"].unique()
 

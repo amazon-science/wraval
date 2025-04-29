@@ -66,7 +66,6 @@ def generate_dataset(model: str,
     prompt = PROMPT_MAP[dataset_type]
     print(prompt)
     raw_output = get_completion(model, bedrock_client, prompt) #[0]["text"]
-    print(raw_output)
     df = process_raw_output(raw_output, dataset_type)
     
     return raw_output, df 
@@ -87,56 +86,31 @@ def process_raw_output(output: str, tone: Tone) -> pd.DataFrame:
         sentences = [line.strip() for line in output.split("\n") if line.strip()]
         return pd.DataFrame(sentences, columns=["synthetic_data"])
 
-def generate_all_datasets(
-    settings: Dynaconf, bedrock_client: boto3.client, model_name: str, upload_s3: bool
-) -> None:
-    all_data = []
-
-    for dataset_type in get_all_tones():
-        print(f"Generating {dataset_type}...")
-        raw_output, df = generate_dataset(
-            settings.model, bedrock_client, dataset_type
-        )
-
-        df["tone"] = dataset_type.replace("_sentences", "")
-        df["synthetic_model"] = model_name
-        all_data.append(df)
-        raw_filename = f"{dataset_type}_raw.txt"
-        data_dir = os.path.expanduser("~/data")
-        os.makedirs(data_dir, exist_ok=True)
-        with open(os.path.join(data_dir, raw_filename), "w") as f:
-            f.write(raw_output)
-
-    combined_df = pd.concat(all_data, ignore_index=True)
-
-    write_dataset_local(combined_df, "~/data", "all-tones")
-    if upload_s3:
-        write_dataset_to_s3(df, settings.s3_bucket, "generate/all", "csv")
-
-
-def generate_specific_dataset(
+def generate_tone_data(
     settings: Dynaconf,
     bedrock_client: boto3.client,
-    dataset_type: str,
+    tone: str,        
     model_name: str,
-    upload_s3: bool,
+    upload_s3: bool
 ) -> None:
-    print(f"Generating {dataset_type}...")
-    raw_output, df = generate_dataset(
-        settings.model, bedrock_client, dataset_type
-    )
+    d = []
 
-    df["tone"] = dataset_type
-    df["synthetic_model"] = model_name
+    if tone is None:
+        tones = get_all_tones()
+    else:
+        tones = tone
 
-    write_dataset_local(df, "~/data", "all-tones")
+    for tone in tones():
+        print(f"Generating {tone}...")
+        t = generate_dataset(settings.model, bedrock_client, tone)
+        t["tone"] = tone
+        t["synthetic_model"] = model_name
+        d.append(t)
+        data_dir = os.path.expanduser("~/data")
+        os.makedirs(data_dir, exist_ok=True)
+
+    combined = pd.concat(d, ignore_index=True)
+
+    write_dataset_local(combined, "~/data", "all-tones")
     if upload_s3:
-        write_dataset_to_s3(df, settings.s3_bucket, f"generate/{dataset_type}", "csv")
-
-    # Save raw output for reference
-    raw_filename = f"{dataset_type}_raw.txt"
-    data_dir = os.path.expanduser("~/data")
-    os.makedirs(data_dir, exist_ok=True)
-    print(raw_output)
-    with open(os.path.join(data_dir, raw_filename), "w") as f:
-        f.write(raw_output)
+        write_dataset_to_s3(df, settings.s3_bucket, "generate/all", "csv")
