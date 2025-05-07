@@ -12,7 +12,7 @@ def route_completion(settings, queries, master_sys_prompt=None):
     if settings.endpoint_type == "bedrock":
         n = len(queries)
         bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=settings.region)
-        prompts = [format_prompt(text, type="bedrock") for text in queries]
+        prompts = [format_prompt(text, master_sys_prompt, type="bedrock") for text in queries]
         m = settings.model.format(aws_account=settings.aws_account)
         if len(prompts) == 1:
             outputs = get_completion(settings, prompts[0])

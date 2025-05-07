@@ -40,7 +40,7 @@ python main.py llm_judge --model nova-lite
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-python main.py generate --type witty --model nova-lite
+python main.py human_judge
 ```
 
 > Note: ideally different models are used for each step, to avoid bias.

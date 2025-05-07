@@ -110,21 +110,12 @@ def main():
                                args.type)
 
     elif args.action == "inference":
-        if args.endpoint_type == "bedrock":
-            client = boto3.client(
-                service_name="bedrock-runtime", region_name=settings.region
-            )
-        else:  # sagemaker
-            inference_model = args.model  # Use model name directly as endpoint name
-            client = None  # Not needed for SageMaker endpoint
 
         run_inference(
             settings,
-            client,
-            inference_model,
+            args.model,
             args.upload_s3,
-            args.data_dir,
-            args.endpoint_type
+            args.data_dir
         )
 
     elif args.action == "llm_judge":        

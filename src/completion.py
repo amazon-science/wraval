@@ -72,7 +72,8 @@ def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_
             print(f"A client error occurred: {message}")
             raise
 
-def batch_get_completions(modelId, prompts, system_prompts=None, max_concurrent=5):
+def batch_get_completions(settings, prompts, system_prompts=None, max_concurrent=100):
+
     if system_prompts is None:
         system_prompts = [None] * len(prompts)
     elif len(system_prompts) != len(prompts):
@@ -82,7 +83,7 @@ def batch_get_completions(modelId, prompts, system_prompts=None, max_concurrent=
     
     def process_prompt(index, prompt, system_prompt):
         try:
-            response = get_completion(modelId, bedrock_client, prompt, system_prompt)
+            response = get_completion(settings, prompt, system_prompt)
             return index, response
         except Exception as e:
             return index, f"Error processing prompt {index}: {str(e)}"
