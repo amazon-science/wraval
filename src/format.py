@@ -34,11 +34,15 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type = 'bedrock'):
         return(text)
     
     elif type == 'bedrock':
-        messages = []
-        for k,v in prompt.examples[0].items():
-            messages.extend([{"role": k, "content": [{"text": v}]}])
-        usr_prompt = [{"role": "user", "content": [{"text": usr_prompt}]}]
-        return(messages + usr_prompt)
+        if prompt:
+            messages = []
+            for k,v in prompt.examples[0].items():
+                messages.extend([{"role": k, "content": [{"text": v}]}])
+            usr_prompt = [{"role": "user", "content": [{"text": usr_prompt}]}]
+            p = messages + usr_prompt
+        else:    
+            p = [{"role": "user", "content": [{"text": usr_prompt}]}]
+        return p
 
 def format_prompt_as_xml(usr_prompt, prompt):
     """

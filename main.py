@@ -92,10 +92,10 @@ def main():
 
     if args.endpoint_type == "bedrock":
         if args.aws_account is None:
-            aws_account = get_current_aws_account_id() 
+            settings.aws_account = get_current_aws_account_id() 
         else:
-            aws_account = args.aws_account
-        settings.model = settings.model.format(aws_account=aws_account)    
+            settings.aws_account = args.aws_account
+        settings.model = settings.model.format(aws_account=settings.aws_account)    
 
     if args.action == "generate":
 
@@ -129,7 +129,7 @@ def main():
 
     elif args.action == "llm_judge":        
         if args.endpoint_type == "bedrock":
-            judge_model = settings.model.format(aws_account=aws_account)
+            judge_model = settings.model.format(aws_account=settings.aws_account)
             client = boto3.client(
                 service_name="bedrock-runtime", region_name=settings.region
             )

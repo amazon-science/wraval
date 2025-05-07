@@ -15,8 +15,6 @@ import sys
 import re
 import requests
 
-
-
 # Function to extract last assistant response from each entry
 def extract_last_assistant_response(data):
     matches = re.findall(r"<\|assistant\|>(.*?)<\|end\|>", data, re.DOTALL)
@@ -27,6 +25,9 @@ def extract_last_assistant_response(data):
         return data
 
 def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_delay=1):
+
+    bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=settings.region)
+
     for attempt in range(max_retries):
         try:
             inference_config = {
@@ -35,7 +36,7 @@ def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_
             }
 
             converse_api_params = {
-                    "modelId": modelId,
+                    "modelId": settings.model,
                     "inferenceConfig": inference_config,
             }
 
@@ -47,7 +48,7 @@ def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_
 
             converse_api_params.update({"messages": messages})
 
-            if 'nova' not in modelId:
+            if 'nova' not in settings.model:
                 converse_api_params.update(
                     {"additionalModelRequestFields": {"top_p": 1}}
                 )
@@ -56,7 +57,7 @@ def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_
                 converse_api_params.update(
                     {"system": [{"text": system_prompt}]}
                 )
-            
+
             response = bedrock_client.converse(**converse_api_params)
             return response['output']['message']['content'][0]['text']
 
@@ -71,7 +72,7 @@ def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_
             print(f"A client error occurred: {message}")
             raise
 
-def batch_get_completions(modelId, bedrock_client, prompts, system_prompts=None, max_concurrent=5):
+def batch_get_completions(modelId, prompts, system_prompts=None, max_concurrent=5):
     if system_prompts is None:
         system_prompts = [None] * len(prompts)
     elif len(system_prompts) != len(prompts):

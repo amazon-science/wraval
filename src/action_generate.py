@@ -65,7 +65,7 @@ def generate_dataset(settings,
     
     prompt = PROMPT_MAP[dataset_type]
     print(prompt)
-    raw_output = route_completion(settings, prompt)[0]
+    raw_output = route_completion(settings, prompt)
     d = process_raw_output(raw_output, dataset_type)
     
     return d
