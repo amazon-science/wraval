@@ -5,13 +5,10 @@
 import time
 import random
 from botocore.exceptions import ClientError
-from src.prompt_tones import Prompt
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
 import boto3
-import base64
-import sys
 import re
 import requests
 
@@ -24,10 +21,10 @@ def extract_last_assistant_response(data):
     else:
         return data
 
-def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_delay=1):
-
+def get_bedrock_completion(settings, prompt, system_prompt=None):
     bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=settings.region)
-
+    max_retries = 2
+    initial_delay = 1
     for attempt in range(max_retries):
         try:
             inference_config = {
@@ -72,7 +69,7 @@ def get_completion(settings, prompt, system_prompt=None, max_retries=3, initial_
             print(f"A client error occurred: {message}")
             raise
 
-def batch_get_completions(settings, prompts, system_prompts=None, max_concurrent=100):
+def batch_get_bedrock_completions(settings, prompts, system_prompts=None, max_concurrent=100):
 
     if system_prompts is None:
         system_prompts = [None] * len(prompts)
@@ -80,13 +77,6 @@ def batch_get_completions(settings, prompts, system_prompts=None, max_concurrent
         raise ValueError("The number of system prompts must match the number of prompts")
 
     results = [None] * len(prompts)
-    
-    def process_prompt(index, prompt, system_prompt):
-        try:
-            response = get_completion(settings, prompt, system_prompt)
-            return index, response
-        except Exception as e:
-            return index, f"Error processing prompt {index}: {str(e)}"
 
     # Add rate limiting at batch level
     completed_requests = 0
@@ -101,7 +91,8 @@ def batch_get_completions(settings, prompts, system_prompts=None, max_concurrent
                     process_prompt,
                     i,
                     prompts[i],
-                    system_prompts[i]
+                    system_prompts[i],
+                    settings
                 ) for i in range(batch_start, batch_end)
             ]
             
@@ -116,21 +107,16 @@ def batch_get_completions(settings, prompts, system_prompts=None, max_concurrent
 
     return results
 
+def process_prompt(index, prompt, system_prompt, settings):
+    try:
+        response = get_bedrock_completion(settings, prompt, system_prompt)
+        return index, response
+    except Exception as e:
+        return index, f"Error processing prompt {index}: {str(e)}"
+
 # Add this new function for future use
-def bedrock_batch_inference(modelId, bedrock_client, prompts, system_prompt, aws_account, tone):
-    """
-    Future implementation of Bedrock's official batch inference API.
-    Currently stored for later use.
-    
-    Args:
-        modelId: The Bedrock model ID
-        bedrock_client: Boto3 Bedrock client
-        prompts: List of prompts to process
-        system_prompt: System prompt to use
-        aws_account: AWS account number
-        tone: Current tone being processed
-    """
-    data_dir = os.path.expanduser('~/data')
+def bedrock_batch_inference(model_id, bedrock_client, prompts, system_prompt, aws_account, tone):
+    data_dir = os.path.expanduser('./data')
     input_file = os.path.join(data_dir, 'batch_input.jsonl')
     
     # Create JSONL records
@@ -172,7 +158,7 @@ def bedrock_batch_inference(modelId, bedrock_client, prompts, system_prompt, aws
     bedrock = boto3.client(service_name="bedrock")
     response = bedrock.create_model_invocation_job(
         roleArn=f"arn:aws:iam::{aws_account}:role/BedrockBatchInferenceRole",
-        modelId=modelId,
+        modelId=model_id,
         jobName=f"tone-transform-{tone}-{int(time.time())}",
         inputDataConfig=input_config,
         outputDataConfig=output_config
