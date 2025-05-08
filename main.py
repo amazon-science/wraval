@@ -12,7 +12,6 @@ from src.action_llm_judge import judge
 from src.aws_utils import get_current_aws_account_id
 
 def parse_args() -> argparse.Namespace:
-    """Setup command line argument parser"""
     parser = argparse.ArgumentParser(
         description="WRAVAL - Writing Assistant Evaluation Tool"
     )
@@ -25,7 +24,7 @@ def parse_args() -> argparse.Namespace:
             "llm_judge",
             "human_judge_upload",
             "human_judge_parsing"
-            ],
+        ],
         help="Action to perform (generate data or run inference)",
     )
 
@@ -42,26 +41,7 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--number-of-samples", "-n", default=100, help="Number of samples to generate (default:100)"
-    )
-
-    parser.add_argument(
-        "--aws-account", required=False, help="AWS account number for Bedrock ARN"
-    )
-
-    parser.add_argument(
         "--upload-s3", default=False, help="Upload generated datasets to S3"
-    )
-
-    parser.add_argument(
-        "--data-dir", default="./data", help="Where the data files are stored"
-    )
-    
-    parser.add_argument(
-        "--endpoint-type",
-        choices=["bedrock", "sagemaker", "ollama"],
-        default="bedrock",
-        help="Type of endpoint to use (default: bedrock)",
     )
 
     parser.add_argument(
@@ -74,45 +54,37 @@ def main():
     args = parse_args()
 
     settings = Dynaconf(
-        settings_files=["settings.toml"], env=args.model, environments=True
+        settings_files=["settings.toml"],
+        env=f"default,{args.model}",
+        environments=True
     )
 
-    settings.endpoint_type = args.endpoint_type
+    settings.aws_account = get_current_aws_account_id()
 
     if args.local_tokenizer_path:
-        settings.local_tokenizer_path = args.local_tokenizer_path    
+        settings.local_tokenizer_path = args.local_tokenizer_path
 
-    if args.endpoint_type == "bedrock":
-        if args.aws_account is None:
-            settings.aws_account = get_current_aws_account_id() 
-        else:
-            settings.aws_account = args.aws_account
-        settings.model = settings.model.format(aws_account=settings.aws_account)    
+    if settings.endpoint_type == "bedrock":
+        settings.model = settings.model.format(aws_account=settings.aws_account)
 
-    # TODO: Always pass args.type and handle in
-    #  generate_tone_data to eliminate the nested branching
     if args.action == "generate":
-        if args.type == "all":
-            generate_tone_data(settings,
-                               args.model,
-                               args.upload_s3)
-        else:
-            generate_tone_data(settings,
-                               args.model,
-                               args.upload_s3,
-                               args.type)
+        generate_tone_data(
+            settings,
+            args.model,
+            args.upload_s3,
+            args.type
+        )
 
     elif args.action == "inference":
-
         run_inference(
             settings,
             args.model,
             args.upload_s3,
-            args.data_dir
+            settings.data_dir
         )
 
     elif args.action == "llm_judge":        
-        if args.endpoint_type == "bedrock":
+        if settings.endpoint_type == "bedrock":
             judge_model = settings.model.format(aws_account=settings.aws_account)
             client = boto3.client(
                 service_name="bedrock-runtime", region_name=settings.region
@@ -126,9 +98,11 @@ def main():
             client,
             judge_model,
             args.upload_s3,
-            args.data_dir,
+            settings.data_dir,
             args.endpoint_type
         )
+    else:
+        raise ValueError(f"Invalid action {args.action}")
         
 if __name__ == "__main__":
     main()

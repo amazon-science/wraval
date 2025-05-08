@@ -2,18 +2,9 @@
 # // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # // SPDX-License-Identifier: Apache-2.0
 #
-import boto3
 from dynaconf import Dynaconf
 from src.data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
-from src.completion import batch_get_completions, invoke_sagemaker_endpoint
-from src.format import format_prompt_as_xml, format_prompt
-import os
-from transformers import AutoTokenizer
-import pandas as pd
-from src.completion import batch_get_completions
-from src.format import format_prompt_as_xml
-from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
-from tqdm import tqdm
+from src.prompt_tones import get_prompt, Tone
 from src.model_router import route_completion
 
 def run_inference(
@@ -85,6 +76,6 @@ def run_inference(
             d.loc[mask, "rewrite"] = cleaned_output
             d.loc[mask, "inference_model"] = model_name
 
-    write_dataset_local(d, "~/data", "all-tones")
+    write_dataset_local(d, "./data", "all-tones")
     if upload_s3:
         write_dataset_to_s3(d, settings.s3_bucket, "inference/all", "csv")
