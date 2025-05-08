@@ -1,52 +1,96 @@
-from src.completion import batch_get_completions, get_completion, invoke_sagemaker_endpoint, invoke_ollama_endpoint
-from src.format import format_prompt_as_xml, format_prompt
-import boto3
+from src.completion import batch_get_bedrock_completions, get_bedrock_completion, invoke_sagemaker_endpoint, invoke_ollama_endpoint
+from src.format import format_prompt
 from transformers import AutoTokenizer
 from tqdm import tqdm
+from typing import List
+from dynaconf.base import LazySettings
+from abc import ABC, abstractmethod
 
-def route_completion(settings, queries, master_sys_prompt=None):
+class ModelRouter(ABC):
+    def __init__(self, master_sys_prompt):
+        self.master_sys_prompt = master_sys_prompt
 
-    if isinstance(queries, str):
-        queries = [queries]
+    @abstractmethod
+    def get_completion(self, queries):
+        pass
 
-    if settings.endpoint_type == "bedrock":
-        n = len(queries)
-        bedrock_client = boto3.client(service_name="bedrock-runtime", region_name=settings.region)
-        prompts = [format_prompt(text, master_sys_prompt, type="bedrock") for text in queries]
-        m = settings.model.format(aws_account=settings.aws_account)
-        if len(prompts) == 1:
-            outputs = get_completion(settings, prompts[0])
-        else:
-            outputs = batch_get_completions(settings, prompts, [master_sys_prompt] * n)
+class HuggingFaceModelRouter(ModelRouter, ABC):
+    def __init__(self, master_sys_prompt, settings):
+        super().__init__(master_sys_prompt)
+        self.tokenizer = get_tokenizer(settings)
 
-    else: # local
-        client = None  # Not needed for SageMaker endpoint
-        if settings.local_tokenizer_path:
-            tokenizer = AutoTokenizer.from_pretrained(
-                settings.local_tokenizer_path
-            )
-        else:
-            tokenizer = AutoTokenizer.from_pretrained(
-                settings.hf_name, trust_remote_code=True
-            )
-        prompts = [
-            format_prompt(text, tokenizer=tokenizer, type="hf") for text in queries
+class OllamaRouter(HuggingFaceModelRouter):
+    def __init__(self, master_sys_prompt, settings):
+        super().__init__(master_sys_prompt, settings)
+    def get_completion(self, queries):
+        prompts = [format_prompt(
+            text,
+            self.master_sys_prompt,
+            self.tokenizer,
+            type="hf") for text in queries
+        ]
+        return [
+            invoke_ollama_endpoint(prompt)
+            for prompt in tqdm(prompts)
         ]
 
-        print(f"Sample prompt:\n{prompts[0]}")
-        
-        if settings.endpoint_type == "sagemaker":
-        
-            outputs = [
-                invoke_sagemaker_endpoint({"inputs": prompt})
-                for prompt in tqdm(prompts)
-            ]
-    
-        elif settings.endpoint_type == "ollama":
-        
-            outputs = [
-                invoke_ollama_endpoint(prompt)
-                for prompt in tqdm(prompts)
-            ]
+class SageMakerRouter(HuggingFaceModelRouter):
+    def __init__(self, master_sys_prompt, settings):
+        super().__init__(master_sys_prompt, settings)
+    def get_completion(self, queries: List[str]):
+        prompts = [
+            format_prompt(text, self.master_sys_prompt, self.tokenizer, type="hf") for text in queries
+        ]
+        return [
+            invoke_sagemaker_endpoint({"inputs": prompt})
+            for prompt in tqdm(prompts)
+        ]
 
-    return outputs
+class BedrockModelRouter(ModelRouter):
+    def __init__(self, master_sys_prompt, settings):
+        super().__init__(master_sys_prompt)
+        self.settings = settings
+    def get_completion(self, queries: List[str]):
+        prompts = [format_prompt(text, self.master_sys_prompt, type="bedrock") for text in queries]
+        if len(prompts) == 1:
+            return get_bedrock_completion(self.settings, prompts[0])
+        return (
+            batch_get_bedrock_completions(
+                self.settings,
+                prompts,
+                [self.master_sys_prompt] * len(prompts))
+        )
+
+def route_completion(
+    settings: LazySettings,
+    queries: List[str], master_sys_prompt=None
+) -> List[str]:
+    return get_router(
+        settings,
+        master_sys_prompt
+    ).get_completion(queries)
+
+def get_router(
+    settings: LazySettings,
+    master_sys_prompt: str
+) -> ModelRouter:
+    match settings.endpoint_type:
+        case "bedrock":
+            return BedrockModelRouter(master_sys_prompt, settings)
+        case "sagemaker":
+            return SageMakerRouter(master_sys_prompt, settings)
+        case "ollama":
+            return OllamaRouter(master_sys_prompt, settings)
+        case _:
+            raise ValueError(
+                f"Unknown endpoint type: {settings.endpoint_type}"
+            )
+
+def get_tokenizer(settings: LazySettings):
+    if settings.get("local_tokenizer_path"):
+        return AutoTokenizer.from_pretrained(
+            settings.local_tokenizer_path
+        )
+    return AutoTokenizer.from_pretrained(
+        settings.hf_name, trust_remote_code=True
+    )

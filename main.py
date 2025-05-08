@@ -3,22 +3,15 @@
 # // SPDX-License-Identifier: Apache-2.0
 #
 from dynaconf import Dynaconf
-from src.data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
 import argparse
-from src.format import format_prompt_as_xml, format_prompt
-from src.prompt_tones import master_sys_prompt
-from tqdm import tqdm
-import os
-import pandas as pd
-from src.format import format_prompt_as_xml
-from src.prompt_tones import master_sys_prompt, get_prompt, get_all_tones, Tone
-from tqdm import tqdm
+import boto3
+from src.prompt_tones import get_all_tones
 from src.action_generate import generate_tone_data
 from src.action_inference import run_inference
 from src.action_llm_judge import judge
 from src.aws_utils import get_current_aws_account_id
 
-def setup_argparse() -> argparse.ArgumentParser:
+def parse_args() -> argparse.Namespace:
     """Setup command line argument parser"""
     parser = argparse.ArgumentParser(
         description="WRAVAL - Writing Assistant Evaluation Tool"
@@ -61,7 +54,7 @@ def setup_argparse() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--data-dir", default="~/data", help="Where the data files are stored"
+        "--data-dir", default="./data", help="Where the data files are stored"
     )
     
     parser.add_argument(
@@ -75,12 +68,11 @@ def setup_argparse() -> argparse.ArgumentParser:
         "--local-tokenizer-path", required=False, help="Allow for a local path to a tokenizer."
     )
     
-    return parser
+    return parser.parse_args()
 
 def main():
-    parser = setup_argparse()
-    args = parser.parse_args()
-        
+    args = parse_args()
+
     settings = Dynaconf(
         settings_files=["settings.toml"], env=args.model, environments=True
     )
@@ -97,8 +89,9 @@ def main():
             settings.aws_account = args.aws_account
         settings.model = settings.model.format(aws_account=settings.aws_account)    
 
+    # TODO: Always pass args.type and handle in
+    #  generate_tone_data to eliminate the nested branching
     if args.action == "generate":
-
         if args.type == "all":
             generate_tone_data(settings,
                                args.model,

@@ -55,7 +55,7 @@ With the popularity of large language models (LLMs), the focus of Language Model
 ## Data
 
 Data is saved to CSV files with timestamps and can optionally be uploaded to S3.
-By default, generated data is saved to `~/data/all-tones-{timestamp}.csv`
+By default, generated data is saved to `./data/all-tones-{timestamp}.csv`
 
 ## Available Tone Types
 
