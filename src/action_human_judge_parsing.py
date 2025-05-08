@@ -49,13 +49,12 @@ def get_human_vs_judge_dataset(args):
     all_data = pd.read_csv(os.path.join(folder_path, last_file))
 
     rewrite = pd.concat(records, axis = 0)
-    # TODO: Where to find this rewrite_score? Are we still assuming one file per tone?
     rewrite.rewrite_score = rewrite.rewrite_score.astype(int)
     rewrite['key'] = rewrite[['tone', 'model','input']].astype(str).agg('_'.join, axis=1)
     rewrite['key'] = rewrite['key'].astype(str)
 
 
-    subset = pd.read_csv('~/data/all_small.csv')
+    subset = pd.read_csv('./data/all_small.csv')
 
     subset['human_rating'] = ''
 

@@ -56,7 +56,7 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
                 )
 
             response = bedrock_client.converse(**converse_api_params)
-            return response['output']['message']['content'][0]['text']
+            return [response['output']['message']['content'][0]['text']]
 
         except ClientError as err:
             message = err.response['Error']['Message']
@@ -202,7 +202,7 @@ def invoke_sagemaker_endpoint(payload, endpoint_name="Phi-3-5-mini-instruct", re
 
 
 def invoke_ollama_endpoint(payload,
-                           endpoint_name="phi3",
+                           endpoint_name,
                            url="127.0.0.1:11434"):
 
     request_body = {

@@ -11,7 +11,7 @@ class ModelRouter(ABC):
         self.master_sys_prompt = master_sys_prompt
 
     @abstractmethod
-    def get_completion(self, queries):
+    def get_completion(self, queries: List[str]) -> List[str]:
         pass
 
 class HuggingFaceModelRouter(ModelRouter, ABC):
@@ -22,7 +22,8 @@ class HuggingFaceModelRouter(ModelRouter, ABC):
 class OllamaRouter(HuggingFaceModelRouter):
     def __init__(self, master_sys_prompt, settings):
         super().__init__(master_sys_prompt, settings)
-    def get_completion(self, queries):
+        self.model_name = settings.model
+    def get_completion(self, queries: List[str]) -> List[str]:
         prompts = [format_prompt(
             text,
             self.master_sys_prompt,
@@ -30,14 +31,14 @@ class OllamaRouter(HuggingFaceModelRouter):
             type="hf") for text in queries
         ]
         return [
-            invoke_ollama_endpoint(prompt)
+            invoke_ollama_endpoint(prompt, self.model_name)
             for prompt in tqdm(prompts)
         ]
 
 class SageMakerRouter(HuggingFaceModelRouter):
     def __init__(self, master_sys_prompt, settings):
         super().__init__(master_sys_prompt, settings)
-    def get_completion(self, queries: List[str]):
+    def get_completion(self, queries: List[str]) -> List[str]:
         prompts = [
             format_prompt(text, self.master_sys_prompt, self.tokenizer, type="hf") for text in queries
         ]
@@ -50,8 +51,12 @@ class BedrockModelRouter(ModelRouter):
     def __init__(self, master_sys_prompt, settings):
         super().__init__(master_sys_prompt)
         self.settings = settings
-    def get_completion(self, queries: List[str]):
-        prompts = [format_prompt(text, self.master_sys_prompt, type="bedrock") for text in queries]
+    def get_completion(self, queries: List[str]) -> List[str]:
+        prompts = [format_prompt(
+            text,
+            self.master_sys_prompt,
+            type="bedrock") for text in queries
+        ]
         if len(prompts) == 1:
             return get_bedrock_completion(self.settings, prompts[0])
         return (

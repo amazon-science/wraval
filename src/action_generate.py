@@ -40,7 +40,7 @@ def generate_dataset(
         settings,
         [PROMPT_MAP[dataset_type]]
     )
-    return process_raw_output(raw_output, Tone(dataset_type))
+    return process_raw_output(raw_output[0], Tone(dataset_type))
 
 def process_raw_output(output: str, tone: Tone) -> pd.DataFrame:
     """Process raw LLM output into a pandas DataFrame"""
@@ -61,26 +61,24 @@ def generate_tone_data(
     settings: Dynaconf,
     model_name: str,
     upload_s3: bool,
-    tone = None
+    tone: str
 ) -> None:
-    d = []
-
-    if tone is None:
+    datasets = []
+    tones = [tone]
+    if tone == "all":
         tones = get_all_tones()
-    else:
-        tones = [tone]
 
     for tone in tones:
         print(f"Generating {tone}...")
-        t = generate_dataset(settings, tone)
-        t["tone"] = tone
-        t["synthetic_model"] = model_name
-        d.append(t)
-        data_dir = os.path.expanduser("./data")
+        dataset = generate_dataset(settings, tone)
+        dataset["tone"] = tone
+        dataset["synthetic_model"] = model_name
+        datasets.append(dataset)
+        data_dir = os.path.expanduser(settings.data_dir)
         os.makedirs(data_dir, exist_ok=True)
 
-    combined = pd.concat(d, ignore_index=True)
+    combined = pd.concat(datasets, ignore_index=True)
 
-    write_dataset_local(combined, "./data", "all-tones")
+    write_dataset_local(combined, settings.data_dir, "all-tones")
     if upload_s3:
         write_dataset_to_s3(combined, settings.s3_bucket, "generate/all", "csv")
