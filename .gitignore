@@ -3,4 +3,8 @@
 data/*
 src/.ipynb_checkpoints/*
 src/__pycache__/*
+src/wraval.egg-info/
+**__pycache__/
+
 prompts/*
+.idea

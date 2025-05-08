@@ -12,5 +12,5 @@ def gen(text, tokenizer, model):
     """    
     inputs = tokenizer(text, return_tensors="pt", truncation=True).input_ids.cuda()
     input_length = inputs.shape[1]
-    outputs = model.generate(inputs,     max_new_tokens=1024)[:, input_length:]
+    outputs = model.handle_generate(inputs, )[:, input_length:]
     return tokenizer.decode(outputs[0], skip_special_tokens=True)

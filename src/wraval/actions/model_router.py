@@ -1,5 +1,5 @@
-from src.completion import batch_get_bedrock_completions, get_bedrock_completion, invoke_sagemaker_endpoint, invoke_ollama_endpoint
-from src.format import format_prompt
+from .completion import batch_get_bedrock_completions, get_bedrock_completion, invoke_sagemaker_endpoint, invoke_ollama_endpoint
+from .format import format_prompt
 from transformers import AutoTokenizer
 from tqdm import tqdm
 from typing import List

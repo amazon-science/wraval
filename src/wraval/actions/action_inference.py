@@ -3,9 +3,9 @@
 # // SPDX-License-Identifier: Apache-2.0
 #
 from dynaconf import Dynaconf
-from src.data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
-from src.prompt_tones import get_prompt, Tone
-from src.model_router import route_completion
+from .data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
+from .prompt_tones import get_prompt, Tone
+from .model_router import route_completion
 
 def run_inference(
     settings: Dynaconf,

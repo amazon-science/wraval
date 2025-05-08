@@ -3,13 +3,13 @@
 # // SPDX-License-Identifier: Apache-2.0
 #
 import pandas as pd
-from src.data_utils import write_dataset_local, write_dataset_to_s3
+from .data_utils import write_dataset_local, write_dataset_to_s3
 from dynaconf import Dynaconf
-from src.prompt_tones import get_all_tones, Tone
+from .prompt_tones import get_all_tones, Tone
 import os
 
-from src.data_generation_prompts import *
-from src.model_router import route_completion
+from .data_generation_prompts import *
+from .model_router import route_completion
 
 # Map dataset types to their corresponding prompts
 PROMPT_MAP = {
