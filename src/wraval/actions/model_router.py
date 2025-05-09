@@ -63,7 +63,7 @@ class BedrockModelRouter(ModelRouter):
             batch_get_bedrock_completions(
                 self.settings,
                 prompts,
-                [self.master_sys_prompt] * len(prompts))
+                [self.master_sys_prompt.sys_prompt] * len(prompts))
         )
 
 def route_completion(

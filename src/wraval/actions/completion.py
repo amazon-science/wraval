@@ -52,7 +52,8 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
                 )
 
             if isinstance(system_prompt, str) and len(system_prompt) > 0:
-                converse_api_params.update({"system": [{"text": system_prompt}]})
+                # converse_api_params.update({"system": [{"text": system_prompt}]})
+                converse_api_params["messages"] = [{"role": "assistant", "content": [{"text": system_prompt}]}] + converse_api_params["messages"]
 
             response = bedrock_client.converse(**converse_api_params)
             return response['output']['message']['content'][0]['text']
