@@ -12,6 +12,7 @@ import boto3
 import re
 import requests
 
+
 # Function to extract last assistant response from each entry
 def extract_last_assistant_response(data):
     matches = re.findall(r"<\|assistant\|>(.*?)<\|end\|>", data, re.DOTALL)
@@ -33,8 +34,8 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
             }
 
             converse_api_params = {
-                    "modelId": settings.model,
-                    "inferenceConfig": inference_config,
+                "modelId": settings.model,
+                "inferenceConfig": inference_config,
             }
 
             # Handle prompt as string
@@ -70,7 +71,6 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
             raise
 
 def batch_get_bedrock_completions(settings, prompts, system_prompts=None, max_concurrent=100):
-
     if system_prompts is None:
         system_prompts = [None] * len(prompts)
     elif len(system_prompts) != len(prompts):
@@ -84,7 +84,7 @@ def batch_get_bedrock_completions(settings, prompts, system_prompts=None, max_co
 
     for batch_start in range(0, len(prompts), batch_size):
         batch_end = min(batch_start + batch_size, len(prompts))
-        
+
         with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
             futures = [
                 executor.submit(
@@ -95,12 +95,12 @@ def batch_get_bedrock_completions(settings, prompts, system_prompts=None, max_co
                     settings
                 ) for i in range(batch_start, batch_end)
             ]
-            
+
             for future in as_completed(futures):
                 index, result = future.result()
                 results[index] = result
                 completed_requests += 1
-        
+
         # Add delay between batches if not the last batch
         if batch_end < len(prompts):
             time.sleep(2)  # Adjust this delay as needed
@@ -118,7 +118,7 @@ def process_prompt(index, prompt, system_prompt, settings):
 def bedrock_batch_inference(model_id, bedrock_client, prompts, system_prompt, aws_account, tone):
     data_dir = os.path.expanduser('./data')
     input_file = os.path.join(data_dir, 'batch_input.jsonl')
-    
+
     # Create JSONL records
     with open(input_file, 'w') as f:
         for idx, prompt in enumerate(prompts):
@@ -140,20 +140,20 @@ def bedrock_batch_inference(model_id, bedrock_client, prompts, system_prompt, aw
                 }
             }
             f.write(json.dumps(record) + '\n')
-    
+
     # Configure batch job
     input_config = {
         "s3InputDataConfig": {
             "s3Uri": f"s3://llm-finetune-us-east-1-{aws_account}/batch_input/{tone}.jsonl"
         }
     }
-    
+
     output_config = {
         "s3OutputDataConfig": {
             "s3Uri": f"s3://llm-finetune-us-east-1-{aws_account}/batch_output/{tone}/"
         }
     }
-    
+
     # Create batch inference job
     bedrock = boto3.client(service_name="bedrock")
     response = bedrock.create_model_invocation_job(
@@ -163,12 +163,14 @@ def bedrock_batch_inference(model_id, bedrock_client, prompts, system_prompt, aw
         inputDataConfig=input_config,
         outputDataConfig=output_config
     )
-    
+
     return response.get('jobArn')
+
 
 def get_job_status(bedrock_client, job_arn):
     """Helper function to get batch job status"""
     return bedrock_client.get_model_invocation_job(jobIdentifier=job_arn)['status']
+
 
 def get_job_error_details(bedrock_client, job_arn):
     """Helper function to get error details for failed jobs"""
@@ -181,6 +183,7 @@ def get_job_error_details(bedrock_client, job_arn):
         'input_config': response.get('inputDataConfig'),
         'output_config': response.get('outputDataConfig')
     }
+
 
 def invoke_sagemaker_endpoint(payload, endpoint_name="Phi-3-5-mini-instruct", region="us-east-1"):
     try:
@@ -204,7 +207,6 @@ def invoke_sagemaker_endpoint(payload, endpoint_name="Phi-3-5-mini-instruct", re
 def invoke_ollama_endpoint(payload,
                            endpoint_name,
                            url="127.0.0.1:11434"):
-
     request_body = {
         "prompt": payload,
         "model": endpoint_name

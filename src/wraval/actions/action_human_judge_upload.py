@@ -8,6 +8,8 @@ from argparse import ArgumentParser
 from src.data_utils import write_dataset_local, write_dataset_to_s3
 
 OUTPUT_DIR = "data"
+TONE = "tone"
+SYNTHETIC_MODEL = "synthetic_model"
 
 def parse_args():
     arg_parser = ArgumentParser()
@@ -30,11 +32,11 @@ def main():
     if dataset.shape[0] < args.n_samples:
         raise ValueError(f"Requested {args.n_samples} samples, but only {dataset.shape[0]} available.")
 
-    unique_tones = dataset["tone"].nunique()
-    unique_models = dataset["synthetic_model"].nunique()
+    unique_tones = dataset[TONE].nunique()
+    unique_models = dataset[SYNTHETIC_MODEL].nunique()
     samples_per_group = args.n_samples // (unique_tones * unique_models)
 
-    grouped = dataset.groupby(["tone", "synthetic_model"])
+    grouped = dataset.groupby([TONE, SYNTHETIC_MODEL])
 
     sampled_dataset = grouped.apply(
         lambda x: x.sample(n=min(len(x), samples_per_group), random_state=42)
@@ -47,8 +49,8 @@ def main():
         sampled_dataset = pd.concat([sampled_dataset, additional_samples])
 
     sampled_dataset = sampled_dataset.reset_index(drop=True)
-    write_dataset_to_s3(dataset, args.bucket_name, f"tones/annotate/{args.dataset_name}_small", "jsonl")
-    write_dataset_local(dataset, OUTPUT_DIR, args.dataset_name)
+    write_dataset_to_s3(sampled_dataset, args.bucket_name, f"tones/annotate/{args.dataset_name}_small", "jsonl")
+    write_dataset_local(sampled_dataset, OUTPUT_DIR, args.dataset_name)
 
 if __name__ == "__main__":
     main()
