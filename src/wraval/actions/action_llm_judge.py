@@ -5,10 +5,9 @@
 import pandas as pd
 from typing import List, Dict, Optional
 from dynaconf import Dynaconf
-from src.data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
-from src.prompts_judge import generate_input_prompt, generate_system_prompt, get_rubric, rewrite_prompt
-from src.completion import batch_get_completions, invoke_sagemaker_endpoint, invoke_ollama_endpoint
-from transformers import AutoTokenizer
+from .data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
+from .prompts_judge import generate_input_prompt, generate_system_prompt, get_rubric, rewrite_prompt
+from .completion import batch_get_bedrock_completions
 import re
 import boto3
 
@@ -72,7 +71,7 @@ def process_tone_data(
     
     # Get completions
     sys_prompts, user_prompts = zip(*prompts)
-    completions = batch_get_completions(
+    completions = batch_get_bedrock_completions(
         model_name, 
         client, 
         user_prompts, 
@@ -137,7 +136,7 @@ def judge(
         d.loc[mask, dmt.columns] = dmt.values
     
     # Save results
-    write_dataset_local(d, "~/data", "all-tones")
+    write_dataset_local(d, "./data", "all-tones")
     if upload_s3:
         write_dataset_to_s3(d, settings.s3_bucket, "inference/all", "csv")
 
@@ -160,7 +159,7 @@ def rewrite_judge(
     """
     d = pd.DataFrame({'input': queries, 'output': answers})
     prompts = [rewrite_prompt(q, a) for q, a in zip(queries, answers)]
-    d['rewrite_score'] = batch_get_completions(
+    d['rewrite_score'] = batch_get_bedrock_completions(
         model_id, 
         bedrock_client,
         prompts,

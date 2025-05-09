@@ -1,0 +1,42 @@
+[default]
+region = 'us-east-1'
+data_dir = './data'
+
+[haiku-3]
+model = 'anthropic.claude-3-haiku-20240307-v1:0'
+endpoint_type = 'bedrock'
+
+[haiku-3-5]
+model = 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
+endpoint_type = 'bedrock'
+
+[sonnet-3]
+model = 'anthropic.claude-3-sonnet-20240229-v1:0'
+endpoint_type = 'bedrock'
+
+[sonnet-3-5]
+model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+endpoint_type = 'bedrock'
+
+[nova-lite]
+model = 'amazon.nova-lite-v1:0'
+endpoint_type = 'bedrock'
+
+[haiku-3-5-cross]
+model = 'arn:aws:bedrock:us-east-1:{aws_account}:inference-profile/us.anthropic.claude-3-5-haiku-20241022-v1:0'
+endpoint_type = 'bedrock'
+
+[phi-3-5-4B]
+model = 'Phi-3-5-mini-instruct'
+hf_name = 'microsoft/Phi-3.5-mini-instruct'
+endpoint_type = 'sagemaker'
+
+[qwen-2-5-1-5B]
+model = 'Qwen2-5-1-5B-Instruct'
+hf_name = 'Qwen/Qwen2.5-1.5B-Instruct'
+endpoint_type = 'sagemaker'
+
+[phi-3-ollama]
+model = 'phi3'
+hf_name = 'microsoft/Phi-3.5-mini-instruct'
+endpoint_type = 'ollama'
