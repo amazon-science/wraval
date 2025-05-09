@@ -108,7 +108,7 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 - [ ] merge generate_all_datasets and generate_specific_datasets
 - [ ] batch processing for Bedrock
 - [ ] batch processing for Sagemaker endpoint
-- [ ] uv?
+- [x] uv
 - [x] from main.py to setup.py
 - [ ] better sagemaker inference output parsing
 - [x] add a model_router.py
