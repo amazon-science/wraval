@@ -44,31 +44,7 @@ def run_inference(
 
         print(f"Processing {len(queries)} unique inputs for tone: {tone}")
 
-        # n = len(queries)
-
         outputs = route_completion(settings, queries, tone_prompt)
-
-        # if settings.endpoint_type == "bedrock":
-        #     prompts = [format_prompt(text, tone_prompt, type="bedrock") for text in tqdm(queries)]
-        #     print(f"Sample prompt:\n{prompts[0]}")
-        #     outputs = batch_get_completions(
-        #         settings.model prompts, [master_sys_prompt] * n
-        #     )
-        # else:  # sagemaker
-        #     tokenizer = AutoTokenizer.from_pretrained(
-        #         settings.hf_name, trust_remote_code=True
-        #     )
-        #     prompts = [
-        #         format_prompt(text, tone_prompt, tokenizer, type="hf") for text in tqdm(queries)
-        #     ]
-        #     print(f"Sample prompt:\n{prompts[0]}")
-        #     outputs = [
-        #         invoke_sagemaker_endpoint(
-        #             {"inputs": prompt}
-        #             # endpoint_name=settings.model
-        #         )
-        #         for prompt in tqdm(prompts)
-        #     ]
 
         for query, output in zip(queries, outputs):
             mask = (d["synthetic_data"] == query) & (d["tone"] == tone)
