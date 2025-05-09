@@ -5,8 +5,8 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 ## Quick start
 
 ```bash
-pip install -r requirements.txt
-python main.py run_all
+pip install -e .
+wraval generate
 ```
 
 ## Step by step
@@ -15,16 +15,16 @@ python main.py run_all
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-python main.py generate --type witty --model nova-lite
+wraval generate --type witty --model nova-lite
 ```
 
 ### 2. You can then use Bedrock hosted models or self-hosted models, to play the role of a writing assistant.
 
 ```bash
 # Bedrock hosted models on all tones
-python main.py inference --model nova-lite --endpoint-type bedrock
+wraval inference --model nova-lite --endpoint-type bedrock
 # Self-hosted Sagemaker models on all tones
-python main.py inference --model {MODEL_NAME} --endpoint-type sagemaker
+wraval inference --model {MODEL_NAME} --endpoint-type sagemaker
 ```
 
 > Note: `MODEL_NAME` uses the proposed mapping in `settings.toml`.
@@ -33,14 +33,14 @@ python main.py inference --model {MODEL_NAME} --endpoint-type sagemaker
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-python main.py llm_judge --model nova-lite
+wraval llm_judge --model nova-lite
 ```
 
 ### 4. Finally you can make a human-as-a-judge setup with a Sagemaker Groundtruth task
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-python main.py human_judge
+wraval human_judge
 ```
 
 > Note: ideally different models are used for each step, to avoid bias.
@@ -100,9 +100,9 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 - [ ] batch processing for Bedrock
 - [ ] batch processing for Sagemaker endpoint
 - [ ] uv?
-- [ ] from main.py to setup.py
+- [x] from main.py to setup.py
 - [ ] better sagemaker inference output parsing
-- [ ] add a model_router.py
+- [x] add a model_router.py
 
 ## How to Cite This Repository
 
