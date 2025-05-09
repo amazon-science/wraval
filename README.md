@@ -9,6 +9,15 @@ pip install -e .
 wraval generate
 ```
 
+## Install with uv
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e .
+wraval generate
+```
+
 ## Step by step
 
 ### 1. Start by generating evaluation data for each of the writing assistant tasks (a.k.a. tones)
