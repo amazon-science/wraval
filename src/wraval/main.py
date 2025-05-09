@@ -12,18 +12,16 @@ from wraval.actions.action_llm_judge import judge
 from wraval.actions.aws_utils import get_current_aws_account_id
 import os
 
+
 def get_settings(args):
     settings = Dynaconf(
-        settings_files=[os.path.join(
-            os.path.dirname(__file__),
-            '..',
-            '..',
-            'config',
-            'settings.toml'
-        )
+        settings_files=[
+            os.path.join(
+                os.path.dirname(__file__), "..", "..", "config", "settings.toml"
+            )
         ],
         env=f"default,{args.model}",
-        environments=True
+        environments=True,
     )
     if settings.endpoint_type in ("bedrock", "sagemaker"):
         settings.aws_account = get_current_aws_account_id()
@@ -32,6 +30,7 @@ def get_settings(args):
     if settings.endpoint_type == "bedrock":
         settings.model = settings.model.format(aws_account=settings.aws_account)
     return settings
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -45,7 +44,7 @@ def parse_args() -> argparse.Namespace:
             "inference",
             "llm_judge",
             "human_judge_upload",
-            "human_judge_parsing"
+            "human_judge_parsing",
         ],
         help="Action to perform (generate data or run inference)",
     )
@@ -67,22 +66,26 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--local-tokenizer-path", required=False, help="Allow for a local path to a tokenizer."
+        "--local-tokenizer-path",
+        required=False,
+        help="Allow for a local path to a tokenizer.",
     )
     return parser.parse_args()
+
 
 def handle_generate(args, settings):
     generate_tone_data(settings, args.model, args.upload_s3, args.type)
 
+
 def handle_inference(args, settings):
     run_inference(settings, args.model, args.upload_s3, settings.data_dir)
+
 
 def handle_judge(args, settings):
     if args.endpoint_type == "bedrock":
         judge_model = settings.model.format(aws_account=settings.aws_account)
         client = boto3.client(
-            service_name="bedrock-runtime",
-            region_name=settings.region
+            service_name="bedrock-runtime", region_name=settings.region
         )
     else:  # sagemaker
         judge_model = args.model
@@ -94,8 +97,9 @@ def handle_judge(args, settings):
         judge_model,
         args.upload_s3,
         settings.data_dir,
-        args.endpoint_type
+        args.endpoint_type,
     )
+
 
 def main():
     args = parse_args()
@@ -110,6 +114,7 @@ def main():
             handle_judge(args, settings)
         case _:
             raise ValueError(f"Unknown action: {args.action}")
-        
+
+
 if __name__ == "__main__":
     main()
