@@ -1,6 +1,7 @@
 [default]
 region = 'us-east-1'
-data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
+data_dir = "./data"
+# 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
 
 [haiku-3]
 model = 'anthropic.claude-3-haiku-20240307-v1:0'

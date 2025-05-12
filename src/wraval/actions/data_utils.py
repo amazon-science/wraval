@@ -97,6 +97,7 @@ def load_latest_dataset(data_dir: str) -> pd.DataFrame:
         bucket, prefix = parse_s3_path(data_dir)
         return load_latest_dataset_from_s3(bucket, prefix)
     else:
+
         # Local file handling
         data_dir = os.path.expanduser(data_dir)
         

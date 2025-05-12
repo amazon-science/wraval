@@ -7,3 +7,4 @@ src/wraval.egg-info/
 **__pycache__/
 prompts/*
 .idea
+src/wraval/custom_prompts/*

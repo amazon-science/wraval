@@ -86,7 +86,7 @@ def handle_inference(args, settings):
 
 
 def handle_judge(args, settings):
-    if args.endpoint_type == "bedrock":
+    if settings.endpoint_type == "bedrock":
         judge_model = settings.model
         client = boto3.client(
             service_name="bedrock-runtime", region_name=settings.region
@@ -100,8 +100,7 @@ def handle_judge(args, settings):
         client,
         judge_model,
         args.upload_s3,
-        settings.data_dir,
-        args.endpoint_type,
+        settings.endpoint_type,
     )
 
 

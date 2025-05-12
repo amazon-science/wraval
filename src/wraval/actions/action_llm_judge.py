@@ -39,6 +39,7 @@ def validate_dataset(d: pd.DataFrame) -> bool:
     return True
 
 def process_tone_data(
+    settings: Dynaconf, 
     d: pd.DataFrame,
     tone: str,
     model_name: str,
@@ -61,22 +62,21 @@ def process_tone_data(
     rubrics = list(tone_rubrics.keys())
     
     # Generate prompts
-    prompts = []
+    user_prompts = []
+    sys_prompts = []
+
     for q, a in zip(dmt["synthetic_data"], dmt["rewrite"]):
         for rubric in rubrics:
-            prompts.append((
-                generate_system_prompt(tone_rubrics[rubric]),
-                generate_input_prompt(q, a, tone)
-            ))
+            user_prompts.append(generate_input_prompt(q, a, tone))
+            sys_prompts.append(generate_system_prompt(tone_rubrics[rubric]))
     
     # Get completions
-    sys_prompts, user_prompts = zip(*prompts)
+    # import pdb
+    # pdb.set_trace()
     completions = batch_get_bedrock_completions(
-        model_name, 
-        client, 
+        settings,
         user_prompts, 
-        sys_prompts, 
-        max_concurrent=len(user_prompts)
+        sys_prompts
     )
     
     rubrics = [r.lower() for r in rubrics]
@@ -99,7 +99,6 @@ def judge(
     client: boto3.client,
     model_name: str,
     upload_s3: bool,
-    data_dir: str,
     endpoint_type: str = "bedrock"
 ) -> None:
     """Judge rewrites using specified model and rubrics.
@@ -113,7 +112,7 @@ def judge(
         endpoint_type: Type of endpoint to use
     """
     try:
-        d = load_latest_dataset(data_dir)
+        d = load_latest_dataset(settings.data_dir)
         print(f"Loaded dataset with {len(d)} rows")
     except FileNotFoundError:
         print("No dataset found. Please generate data first.")
@@ -129,7 +128,7 @@ def judge(
         print(f"\n{'='*20}\n{tone}\n{'='*20}")
         
         tone_rubrics = get_rubric(tone.upper())
-        dmt = process_tone_data(d, tone, model_name, client, tone_rubrics)
+        dmt = process_tone_data(settings, d, tone, model_name, client, tone_rubrics)
         
         # Update main dataframe
         mask = (d.tone == tone)
