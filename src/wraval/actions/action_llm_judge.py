@@ -7,6 +7,7 @@ from typing import List, Dict, Optional
 from dynaconf import Dynaconf
 from .data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
 from .prompts_judge import generate_input_prompt, generate_system_prompt, get_rubric, rewrite_prompt
+
 from .completion import batch_get_bedrock_completions
 import re
 import boto3
@@ -58,6 +59,10 @@ def process_tone_data(
     Returns:
         Processed DataFrame with scores
     """
+
+    if settings.custom_prompts == True:
+        from wraval.custom_prompts.prompts_judge import generate_input_prompt, generate_system_prompt
+
     dmt = d[d.tone == tone].copy()
     rubrics = list(tone_rubrics.keys())
     
@@ -111,6 +116,10 @@ def judge(
         data_dir: Directory containing input data
         endpoint_type: Type of endpoint to use
     """
+
+    if settings.custom_prompts == True:
+        from wraval.custom_prompts.prompts_judge import get_rubric
+
     try:
         d = load_latest_dataset(settings.data_dir)
         print(f"Loaded dataset with {len(d)} rows")

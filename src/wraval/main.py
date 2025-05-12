@@ -32,6 +32,11 @@ def get_settings(args):
     ## add the AWS account you are logged into, if necessary.
     settings.model = settings.model.format(aws_account=settings.aws_account)
     settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
+
+    if args.custom_prompts:
+        settings.custom_prompts = True
+    else:
+        settings.custom_prompts = False
     return settings
 
 
@@ -74,6 +79,11 @@ def parse_args() -> argparse.Namespace:
         required=False,
         help="Allow for a local path to a tokenizer.",
     )
+
+    parser.add_argument(
+        "--custom-prompts", default=False, help="Load custom prompts from a prompt folder"
+    )
+
     return parser.parse_args()
 
 
