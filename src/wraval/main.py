@@ -10,6 +10,7 @@ from wraval.actions.action_generate import generate_tone_data
 from wraval.actions.action_inference import run_inference
 from wraval.actions.action_llm_judge import judge
 from wraval.actions.aws_utils import get_current_aws_account_id
+from wraval.actions.action_results import show_results
 import os
 
 
@@ -27,8 +28,10 @@ def get_settings(args):
         settings.aws_account = get_current_aws_account_id()
     if args.local_tokenizer_path:
         settings.local_tokenizer_path = args.local_tokenizer_path
-    if settings.endpoint_type == "bedrock":
-        settings.model = settings.model.format(aws_account=settings.aws_account)
+
+    ## add the AWS account you are logged into, if necessary.
+    settings.model = settings.model.format(aws_account=settings.aws_account)
+    settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
     return settings
 
 
@@ -45,6 +48,7 @@ def parse_args() -> argparse.Namespace:
             "llm_judge",
             "human_judge_upload",
             "human_judge_parsing",
+            "show_results",
         ],
         help="Action to perform (generate data or run inference)",
     )
@@ -83,7 +87,7 @@ def handle_inference(args, settings):
 
 def handle_judge(args, settings):
     if args.endpoint_type == "bedrock":
-        judge_model = settings.model.format(aws_account=settings.aws_account)
+        judge_model = settings.model
         client = boto3.client(
             service_name="bedrock-runtime", region_name=settings.region
         )
@@ -101,6 +105,10 @@ def handle_judge(args, settings):
     )
 
 
+def handle_show_results(args, settings):
+    show_results(settings, args.type)
+
+
 def main():
     args = parse_args()
     settings = get_settings(args)
@@ -112,6 +120,8 @@ def main():
             handle_inference(args, settings)
         case "llm_judge":
             handle_judge(args, settings)
+        case "show_results":
+            handle_show_results(args, settings)
         case _:
             raise ValueError(f"Unknown action: {args.action}")
 
