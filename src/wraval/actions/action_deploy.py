@@ -6,7 +6,7 @@ import tarfile
 import boto3
 import json
 
-MODEL_DIRECTORY = '../../model_artifacts'
+MODEL_DIRECTORY = '../../../model_artifacts'
 
 def cleanup_endpoints(endpoint_name):
 
