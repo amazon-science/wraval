@@ -11,6 +11,7 @@ from wraval.actions.action_inference import run_inference
 from wraval.actions.action_llm_judge import judge
 from wraval.actions.aws_utils import get_current_aws_account_id
 from wraval.actions.action_results import show_results
+from wraval.actions.action_deploy import deploy
 import os
 
 
@@ -32,6 +33,8 @@ def get_settings(args):
     ## add the AWS account you are logged into, if necessary.
     settings.model = settings.model.format(aws_account=settings.aws_account)
     settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
+    settings.deploy_bucket_name = settings.deploy_bucket_name.format(aws_account=settings.aws_account)
+    settings.sagemaker_execution_role_arn = settings.sagemaker_execution_role_arn.format(aws_account=settings.aws_account)
 
     if args.custom_prompts:
         settings.custom_prompts = True
@@ -54,6 +57,7 @@ def parse_args() -> argparse.Namespace:
             "human_judge_upload",
             "human_judge_parsing",
             "show_results",
+            "deploy"
         ],
         help="Action to perform (generate data or run inference)",
     )
@@ -82,6 +86,10 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--custom-prompts", default=False, help="Load custom prompts from a prompt folder"
+    )
+
+    parser.add_argument(
+        "--cleanup_endpoints", action='store_true'
     )
 
     return parser.parse_args()
@@ -117,6 +125,9 @@ def handle_judge(args, settings):
 def handle_show_results(args, settings):
     show_results(settings, args.type)
 
+def handle_deploy(args, settings):
+    deploy(settings, args.cleanup_endpoints)
+
 
 def main():
     args = parse_args()
@@ -131,6 +142,8 @@ def main():
             handle_judge(args, settings)
         case "show_results":
             handle_show_results(args, settings)
+        case "deploy":
+            handle_deploy(args, settings)            
         case _:
             raise ValueError(f"Unknown action: {args.action}")
 

@@ -1,7 +1,10 @@
 [default]
 region = 'us-east-1'
-data_dir = "./data"
-# 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
+data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
+# "./data"
+deploy_bucket_name = 's3://llm-finetune-us-east-1-{aws_account}'
+deploy_bucket_prefix = 'models'
+sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'
 
 [haiku-3]
 model = 'anthropic.claude-3-haiku-20240307-v1:0'

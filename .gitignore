@@ -8,3 +8,4 @@ src/wraval.egg-info/
 prompts/*
 .idea
 src/wraval/custom_prompts/*
+src/wraval/testing.py
