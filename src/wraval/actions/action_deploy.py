@@ -6,6 +6,8 @@ import tarfile
 import boto3
 import json
 
+MODEL_DIRECTORY = '../../model_artifacts'
+
 def cleanup_endpoints(endpoint_name):
 
     sagemaker_client = boto3.client("sagemaker", region_name='us-east-1')
