@@ -4,6 +4,15 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 
 ## Quick start
 
+Disclaimer: this project requires a machine that supports bitsandbytes and CUDA.
+
+Before installing, execute the following to ensure correct dependencies:
+
+```bash
+pip install uv
+uv pip compile pyproject.toml -o requirements.txt
+```
+
 ```bash
 pip install -e .
 wraval generate
