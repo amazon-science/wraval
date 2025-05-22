@@ -4,7 +4,7 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 
 ## Quick start
 
-Disclaimer: this project requires a machine that supports bitsandbytes and CUDA.
+Disclaimer: the deploy action requires a machine that supports bitsandbytes and CUDA.
 
 Before installing, execute the following to ensure correct dependencies:
 
