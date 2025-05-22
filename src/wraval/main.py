@@ -29,7 +29,6 @@ def get_settings(args):
         settings.aws_account = get_current_aws_account_id()
     if args.local_tokenizer_path:
         settings.local_tokenizer_path = args.local_tokenizer_path
-
     ## add the AWS account you are logged into, if necessary.
     settings.model = settings.model.format(aws_account=settings.aws_account)
     settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
@@ -121,13 +120,11 @@ def handle_judge(args, settings):
         settings.endpoint_type,
     )
 
-
 def handle_show_results(args, settings):
     show_results(settings, args.type)
 
-def handle_deploy(args, settings):
-    deploy(settings, args.cleanup_endpoints)
-
+def handle_deploy(settings):
+    deploy(settings)
 
 def main():
     args = parse_args()
@@ -143,7 +140,7 @@ def main():
         case "show_results":
             handle_show_results(args, settings)
         case "deploy":
-            handle_deploy(args, settings)            
+            handle_deploy(settings)
         case _:
             raise ValueError(f"Unknown action: {args.action}")
 

@@ -9,3 +9,5 @@ prompts/*
 .idea
 src/wraval/custom_prompts/*
 src/wraval/testing.py
+src/wraval/model_artifacts/*
+!src/wraval/model_artifacts/code/

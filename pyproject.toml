@@ -13,22 +13,23 @@ authors = [{ name = "Gabriel Benedict", email = "gbndict@amazon.com" }]
 
 # Dependencies – see note below for loading from requirements.txt
 dependencies = [
-    "tqdm==4.66.4",
-    "pandas==2.2.3",
-    "beautifulsoup4==4.12.3",
-    "boto3==1.34.143",
-    "plotly==5.24.1",
-    "transformers==4.48.1",
-    "datasets==3.2.0",
-    "evaluate==0.4.3",
-    "dynaconf==3.2.7",
-    "torch~=2.6.0",
-    "botocore~=1.34.162",
-    "sagemaker",
+    "tqdm~=4.66.4",
+    "pandas~=2.2.3",
+    "beautifulsoup4~=4.12.3",
+    "boto3",
+    "plotly~=5.24.1",
+    "transformers==4.51.0",
+    "datasets~=3.2.0",
+    "evaluate~=0.4.3",
+    "dynaconf~=3.2.7",
+    "torch",
+    "botocore",
+    "sagemaker==2.244.2",
     "numpy",
     "requests",
-    "bitsandbytes",
-    "accelerate"
+    "bitsandbytes==0.45.5",
+    "accelerate",
+    "torchvision"
 ]
 
 [project.scripts]

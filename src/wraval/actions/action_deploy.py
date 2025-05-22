@@ -1,22 +1,39 @@
-from argparse import ArgumentParser
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from sagemaker.huggingface import HuggingFaceModel
-import torch
-import tarfile
-import boto3
 import json
+import os
+import tarfile
+from argparse import ArgumentParser
 
-MODEL_DIRECTORY = '../../../model_artifacts'
+import boto3
+import torch
+from sagemaker.huggingface import HuggingFaceModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
+PACKAGE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_DIRECTORY = os.path.join(PACKAGE_DIR, "model_artifacts")
+CODE_PATH = "code"
+
+def parse_args():
+    arg_parser = ArgumentParser()
+    arg_parser.add_argument("--model_name", type=str, required=True, choices=(
+        "Qwen/Qwen2.5-1.5B-Instruct",
+        "microsoft/Phi-3.5-mini-instruct",
+        "microsoft/Phi-4-mini-instruct"
+    )
+                            )
+    arg_parser.add_argument("--bucket_name", type=str, required=True)
+    arg_parser.add_argument("--bucket_prefix", type=str, required=True)
+    arg_parser.add_argument("--sagemaker_execution_role_arn", type=str, required=True)
+    return arg_parser.parse_args()
 
 def cleanup_endpoints(endpoint_name):
 
-    sagemaker_client = boto3.client("sagemaker", region_name='us-east-1')
+    sagemaker_client = boto3.client("sagemaker", region_name="us-east-1")
 
-    endpoints = sagemaker_client.list_endpoints()['Endpoints']
-    endpoints_configs = sagemaker_client.list_endpoint_configs()['EndpointConfigs']
+    endpoints = sagemaker_client.list_endpoints()["Endpoints"]
+    endpoints_configs = sagemaker_client.list_endpoint_configs()["EndpointConfigs"]
 
-    endpoints_names = [e['EndpointName'] for e in endpoints]
-    endpoints_configs_names = [e['EndpointConfigName'] for e in endpoints_configs]
+    endpoints_names = [e["EndpointName"] for e in endpoints]
+    endpoints_configs_names = [e["EndpointConfigName"] for e in endpoints_configs]
 
     if endpoint_name in endpoints_names:
         sagemaker_client.delete_endpoint(EndpointConfigName=endpoint_name)
@@ -44,14 +61,14 @@ def load_artifacts(settings):
 
 def write_model_to_s3(settings, model_name):
     tar_file_name = f"{model_name}.tar.gz"
-    
+
     with tarfile.open(tar_file_name, "w:gz") as tar:
         tar.add(MODEL_DIRECTORY, arcname=".")
-    
+
     s3_model_path = f"{settings.deploy_bucket_prefix}/{tar_file_name}"
     s3_client = boto3.client("s3")
     s3_client.upload_file(tar_file_name, settings.deploy_bucket_name, s3_model_path)
-        
+
     s3_uri = f"s3://{settings.deploy_bucket_name}/{s3_model_path}"
     print(f"Model uploaded to: {s3_uri}")
     return s3_uri
@@ -92,15 +109,35 @@ def validate_deployment(predictor):
         print(f"Validation failed: {e}")
         raise e
 
-def deploy(settings, cleanup_endpoints=False):
-    sanitized_model_name = settings.hf_name.split('/')[1].replace('.', '-')
-    if cleanup_endpoints:
-        cleanup_endpoints(sanitized_model_name)
+def validate_model_directory():
+    endpoint_code_path = os.path.join(MODEL_DIRECTORY, CODE_PATH)
+    inference_script_name = "inference.py"
+    requirements_name = "requirements.txt"
+    if not os.path.isdir(endpoint_code_path):
+        raise ValueError(f"{endpoint_code_path} is missing.")
+    if not os.path.isfile(os.path.join(endpoint_code_path, inference_script_name)):
+        raise ValueError(f"{inference_script_name} is missing from the code directory.")
+    if not os.path.isfile(os.path.join(endpoint_code_path, requirements_name)):
+        raise ValueError(f"{requirements_name} is missing from the code directory.")
+
+
+def cleanup_model_directory():
+    for item in os.listdir(MODEL_DIRECTORY):
+        item_path = os.path.join(MODEL_DIRECTORY, item)
+        if item == CODE_PATH:
+            continue
+        if os.path.isfile(item_path):
+            os.remove(item_path)
+
+def deploy(settings):
+    validate_model_directory()
+    cleanup_model_directory()
+    sanitized_model_name = settings.hf_name.split("/")[1].replace(".", "-")
     load_artifacts(settings)
     s3_uri = write_model_to_s3(settings, sanitized_model_name)
     predictor = deploy_endpoint(
         s3_uri,
-        settings.sagemaker_execution_role_arn, 
+        settings.sagemaker_execution_role_arn,
         sanitized_model_name
     )
     validate_deployment(predictor)
