@@ -27,13 +27,15 @@ dependencies = [
     "sagemaker==2.244.2",
     "numpy",
     "requests",
-    "bitsandbytes==0.45.5",
     "accelerate",
     "torchvision"
 ]
 
 [project.scripts]
 wraval = "wraval.main:main"
+
+[project.optional-dependencies]
+gpu = ["bitsandbytes==0.45.5"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

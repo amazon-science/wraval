@@ -4,28 +4,12 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 
 ## Quick start
 
-> Disclaimer: the deploy action requires a machine that supports bitsandbytes and CUDA.
-
-Before installing, execute the following to ensure correct dependencies:
-
 ```bash
-pip install uv
-uv pip compile pyproject.toml -o requirements.txt
-```
-
-```bash
-pip install -e .
+uv pip install .
 wraval generate
 ```
 
-## Install with uv
-
-```bash
-uv venv
-source .venv/bin/activate
-uv pip install -e .
-wraval generate
-```
+> Disclaimer: the deploy action requires a machine that supports bitsandbytes and CUDA. See below.
 
 ## Step by step
 
@@ -62,6 +46,15 @@ wraval human_judge
 ```
 
 > Note: ideally different models are used for each step, to avoid bias.
+
+### 5. Deploy a Sagemaker Endpoint to be used by the steps above.
+
+> Use a machine with CUDA support
+
+```bash
+uv pip install ".[gpu]"
+wraval deploy -m ...
+```
 
 An additional notebook is provided to benchmark models on translation tasks on open datasets [here](Haiku_translate.ipynb).
 
