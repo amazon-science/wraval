@@ -26,5 +26,5 @@ def predict_fn(data, model_and_tokenizer, *args):
     tokenizer.pad_token = tokenizer.eos_token
     model.config.pad_token_id = model.config.eos_token_id
     inputs = tokenizer(sentences, return_tensors="pt", padding=True).to(model.device)
-    output_sequences = model.generate(**inputs, max_new_tokens=20)
+    output_sequences = model.generate(**inputs, max_new_tokens=1024)
     return tokenizer.batch_decode(output_sequences, skip_special_tokens=True)

@@ -43,3 +43,8 @@ endpoint_type = 'sagemaker'
 model = 'phi3'
 hf_name = 'microsoft/Phi-3.5-mini-instruct'
 endpoint_type = 'ollama'
+
+[phi-4-4B]
+model = 'Phi-4-mini-instruct'
+hf_name = 'microsoft/Phi-4-mini-instruct'
+endpoint_type = 'sagemaker'
