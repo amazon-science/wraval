@@ -34,6 +34,7 @@ def get_settings(args):
     settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
     settings.deploy_bucket_name = settings.deploy_bucket_name.format(aws_account=settings.aws_account)
     settings.sagemaker_execution_role_arn = settings.sagemaker_execution_role_arn.format(aws_account=settings.aws_account)
+    settings.type = args.type
 
     if args.custom_prompts:
         settings.custom_prompts = True

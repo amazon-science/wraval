@@ -29,6 +29,9 @@ def run_inference(
     tones = d["tone"].unique()
     print(f"Found tones: {tones}")
 
+    if settings.type != "all":
+        tones = [settings.type]
+
     for tone in tones:
         print(
             f"""

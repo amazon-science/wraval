@@ -19,8 +19,9 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type = 'bedrock'):
         if prompt:
             sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
             messages = []
-            for k,v in prompt.examples[0].items():
-                messages.extend([{"role": k, "content": v}])
+            if prompt.examples:
+                for k,v in prompt.examples[0].items():
+                    messages.extend([{"role": k, "content": v}])
             usr_prompt = [{"role": "user", "content": usr_prompt}]    
             p = sys_prompt + messages + usr_prompt
         else:
@@ -36,8 +37,9 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type = 'bedrock'):
     elif type == 'bedrock':
         if prompt:
             messages = []
-            for k,v in prompt.examples[0].items():
-                messages.extend([{"role": k, "content": [{"text": v}]}])
+            if prompt.examples:
+                for k,v in prompt.examples[0].items():
+                    messages.extend([{"role": k, "content": v}])
             usr_prompt = [{"role": "user", "content": [{"text": usr_prompt}]}]
             p = messages + usr_prompt
         else:    
