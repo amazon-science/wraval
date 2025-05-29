@@ -47,4 +47,3 @@ where = ["src"]
 [tool.setuptools.data-files]
 # This copies the config file into the installation (non-package dir)
 "config" = ["config/settings.toml"]
-

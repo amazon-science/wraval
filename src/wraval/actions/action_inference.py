@@ -2,8 +2,9 @@
 # // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # // SPDX-License-Identifier: Apache-2.0
 #
+import pandas as pd
 from dynaconf import Dynaconf
-from .data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
+from .data_utils import write_dataset, load_latest_dataset
 from .prompt_tones import get_prompt, Tone
 from .model_router import route_completion
 
@@ -14,12 +15,7 @@ def run_inference(
     data_dir: str
 ) -> None:
     """Run inference on sentences using the specified model"""
-    try:
-        d = load_latest_dataset(data_dir)
-        print(f"Loaded dataset with {len(d)} rows")
-    except FileNotFoundError:
-        print("No dataset found. Please generate data first.")
-        return
+    d = load_latest_dataset(data_dir)
 
     if "rewrite" not in d.columns:
         d["rewrite"] = None
@@ -49,12 +45,11 @@ def run_inference(
 
         outputs = route_completion(settings, queries, tone_prompt)
 
-        for query, output in zip(queries, outputs):
-            mask = (d["synthetic_data"] == query) & (d["tone"] == tone)
-            cleaned_output = output.strip().strip('"')
-            d.loc[mask, "rewrite"] = cleaned_output
-            d.loc[mask, "inference_model"] = model_name
+        cleaned_output = [o.strip().strip('"') for o in outputs]
+        new = pd.DataFrame({"synthetic_data" : queries, "tone" : tone})
+        new["rewrite"] = cleaned_output
+        new["inference_model"] = model_name
 
-    write_dataset_local(d, "./data", "all-tones")
-    if upload_s3:
-        write_dataset_to_s3(d, settings.s3_bucket, "inference/all", "csv")
+        d = pd.concat([d, new], ignore_index=True)
+
+    write_dataset(d, data_dir, "all", "csv")

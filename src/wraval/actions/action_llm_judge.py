@@ -5,7 +5,7 @@
 import pandas as pd
 from typing import List, Dict, Optional
 from dynaconf import Dynaconf
-from .data_utils import write_dataset_local, write_dataset_to_s3, load_latest_dataset
+from .data_utils import write_dataset, load_latest_dataset
 from .prompts_judge import generate_input_prompt, generate_system_prompt, get_rubric, rewrite_prompt
 
 from .completion import batch_get_bedrock_completions
@@ -144,9 +144,7 @@ def judge(
         d.loc[mask, dmt.columns] = dmt.values
     
     # Save results
-    write_dataset_local(d, "./data", "all-tones")
-    if upload_s3:
-        write_dataset_to_s3(d, settings.s3_bucket, "inference/all", "csv")
+    write_dataset(d, settings.data_dir, "all-tones", "csv")
 
 def rewrite_judge(
     model_id: str,

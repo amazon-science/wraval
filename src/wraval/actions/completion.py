@@ -196,6 +196,7 @@ def invoke_sagemaker_endpoint(
             Body=input_string.encode("utf-8"),
             ContentType="application/json",
         )
+        import pdb; pdb.set_trace()
         json_output = response["Body"].readlines()
         plain_output = "\n".join(json.loads(json_output[0]))
         last_assistant = extract_last_assistant_response(plain_output)
