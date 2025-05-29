@@ -5,7 +5,7 @@ from .completion import (
 )
 from .format import format_prompt
 from transformers import AutoTokenizer
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from typing import List
 from dynaconf.base import LazySettings
 from abc import ABC, abstractmethod

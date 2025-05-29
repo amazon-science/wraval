@@ -3,7 +3,7 @@
 # // SPDX-License-Identifier: Apache-2.0
 #
 import pandas as pd
-from .data_utils import write_dataset_local, write_dataset_to_s3
+from .data_utils import write_dataset
 from dynaconf import Dynaconf
 from .prompt_tones import get_all_tones, Tone
 import os
@@ -79,6 +79,4 @@ def generate_tone_data(
 
     combined = pd.concat(datasets, ignore_index=True)
 
-    write_dataset_local(combined, settings.data_dir, "all-tones")
-    if upload_s3:
-        write_dataset_to_s3(combined, settings.s3_bucket, "generate/all", "csv")
+    write_dataset(combined, settings.data_dir, "all", "csv")
