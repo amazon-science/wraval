@@ -275,7 +275,7 @@ safetensors==0.5.3
     # via
     #   accelerate
     #   transformers
-sagemaker==2.236.0
+sagemaker==2.237.3
     # via wraval (pyproject.toml)
 sagemaker-core==1.0.16
     # via sagemaker
