@@ -15,14 +15,14 @@ def run_inference(
     data_dir: str
 ) -> None:
     """Run inference on sentences using the specified model"""
-    d = load_latest_dataset(data_dir)
+    results = load_latest_dataset(data_dir)
 
-    if "rewrite" not in d.columns:
-        d["rewrite"] = None
-    if "inference_model" not in d.columns:
-        d["inference_model"] = None
+    if "rewrite" not in results.columns:
+        results["rewrite"] = None
+    if "inference_model" not in results.columns:
+        results["inference_model"] = None
 
-    tones = d["tone"].unique()
+    tones = results["tone"].unique()
     print(f"Found tones: {tones}")
 
     if settings.type != "all":
@@ -39,17 +39,17 @@ def run_inference(
 
         tone_prompt = get_prompt(Tone(tone))
 
-        queries = d[d["tone"] == tone]["synthetic_data"].unique()
+        queries = results[results["tone"] == tone]["synthetic_data"].unique()
 
         print(f"Processing {len(queries)} unique inputs for tone: {tone}")
 
         outputs = route_completion(settings, queries, tone_prompt)
 
         cleaned_output = [o.strip().strip('"') for o in outputs]
-        new = pd.DataFrame({"synthetic_data" : queries, "tone" : tone})
-        new["rewrite"] = cleaned_output
-        new["inference_model"] = model_name
+        new_results = pd.DataFrame({"synthetic_data" : queries, "tone" : tone})
+        new_results["rewrite"] = cleaned_output
+        new_results["inference_model"] = model_name
 
-        d = pd.concat([d, new], ignore_index=True)
+        results = pd.concat([results, new_results], ignore_index=True)
 
-    write_dataset(d, data_dir, "all", "csv")
+    write_dataset(results, data_dir, "all", "csv")
