@@ -25,7 +25,7 @@ def extract_score(text: str) -> Optional[int]:
     match = re.search(r"<score>(\d+)</score>", text)
     return int(match.group(1)) if match else None
 
-def validate_dataset(d: pd.DataFrame) -> bool:
+def validate_dataset(results: pd.DataFrame) -> bool:
     """Validate required columns exist in dataset.
     
     Args:
@@ -35,14 +35,14 @@ def validate_dataset(d: pd.DataFrame) -> bool:
         True if valid, False otherwise
     """
     required_columns = {"synthetic_data", "rewrite", "tone"}
-    if not all(col in d.columns for col in required_columns):
+    if not all(col in results.columns for col in required_columns):
         print(f"Missing required columns. Required: {required_columns}")
         return False
     return True
 
 def process_tone_data(
     settings: Dynaconf, 
-    d: pd.DataFrame,
+    results: pd.DataFrame,
     tone: str,
     model_name: str,
     client: boto3.client,
@@ -64,14 +64,14 @@ def process_tone_data(
     if settings.custom_prompts == True:
         from wraval.custom_prompts.prompts_judge import generate_input_prompt, generate_system_prompt
 
-    dmt = d.copy()
+    temp_results = results.copy()
     rubrics = list(tone_rubrics.keys())
     
     # Generate prompts
     user_prompts = []
     sys_prompts = []
 
-    for q, a in zip(dmt["synthetic_data"], dmt["rewrite"]):
+    for q, a in zip(temp_results["synthetic_data"], temp_results["rewrite"]):
         for rubric in rubrics:
             user_prompts.append(generate_input_prompt(q, a, tone))
             sys_prompts.append(generate_system_prompt(tone_rubrics[rubric]))
@@ -89,16 +89,16 @@ def process_tone_data(
 
     # Process scores
     for i, rubric in enumerate(rubrics):
-        dmt[rubric] = completions[i::len(rubrics)]
-        dmt[f'{rubric}_score'] = dmt[rubric].apply(extract_score)
+        temp_results[rubric] = completions[i::len(rubrics)]
+        temp_results[f'{rubric}_score'] = temp_results[rubric].apply(extract_score)
     
     # Move all score columns to the right
     score_columns = [f'{r}_score' for r in rubrics]
-    other_columns = [col for col in dmt.columns if col not in score_columns]
-    dmt = dmt[other_columns + score_columns]
+    other_columns = [col for col in temp_results.columns if col not in score_columns]
+    temp_results = temp_results[other_columns + score_columns]
     
-    dmt['overall_score'] = dmt[score_columns].mean(axis=1)
-    return dmt
+    temp_results['overall_score'] = temp_results[score_columns].mean(axis=1)
+    return temp_results
 
 def judge(
     settings: Dynaconf,
@@ -122,17 +122,17 @@ def judge(
         from wraval.custom_prompts.prompts_judge import get_rubric
 
     try:
-        d = load_latest_dataset(settings.data_dir)
-        print(f"Loaded dataset with {len(d)} rows")
+        results = load_latest_dataset(settings.data_dir)
+        print(f"Loaded dataset with {len(results)} rows")
     except FileNotFoundError:
         print("No dataset found. Please generate data first.")
         return
         
-    if not validate_dataset(d):
+    if not validate_dataset(results):
         return
         
-    tones = d["tone"].unique()
-    inf_models = d["inference_model"].unique()
+    tones = results["tone"].unique()
+    inf_models = results["inference_model"].unique()
     print(f"Found tones: {tones}")
     print(f"Found inference_models: {inf_models}")
 
@@ -141,20 +141,20 @@ def judge(
     
     # Process each tone-model combination that needs scoring
     for tone, inf_model in product(tones, inf_models):
-        mask = (d.inference_model == inf_model) & (d.tone == tone)
+        mask = (results.inference_model == inf_model) & (results.tone == tone)
         # check if any score is missing for this inference model and this tone
         # If yes, run the eval below
-        if not d[mask].overall_score.isna().any():
+        if not results[mask].overall_score.isna().any():
             continue
             
         print(f"\n{'='*20}\n{tone} tone\nfor inference model {inf_model}\n{'='*20}")
         
         tone_rubrics = get_rubric(tone.upper())
-        dmt = process_tone_data(settings, d[mask], tone, model_name, client, tone_rubrics)
-        d.loc[mask, dmt.columns] = dmt.values
+        temp_results = process_tone_data(settings, results[mask], tone, model_name, client, tone_rubrics)
+        results.loc[mask, temp_results.columns] = temp_results.values
     
     # Save results
-    write_dataset(d, settings.data_dir, "all-tones", "csv")
+    write_dataset(results, settings.data_dir, "all", "csv")
 
 def rewrite_judge(
     model_id: str,
@@ -173,12 +173,12 @@ def rewrite_judge(
     Returns:
         DataFrame with input, output, and scores
     """
-    d = pd.DataFrame({'input': queries, 'output': answers})
+    results = pd.DataFrame({'input': queries, 'output': answers})
     prompts = [rewrite_prompt(q, a) for q, a in zip(queries, answers)]
-    d['rewrite_score'] = batch_get_bedrock_completions(
+    results['rewrite_score'] = batch_get_bedrock_completions(
         model_id, 
         bedrock_client,
         prompts,
         max_concurrent=len(prompts)
     )
-    return d
+    return results
