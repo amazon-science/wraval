@@ -106,14 +106,14 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 - [x] data
 - [x] 1. data generation -> prompt library
 - [x] 2.b. LLM -> implement this in a modular way in in format_prompt_as_xml
-- [ ] transfer args to settings
-- [ ] merge generate_all_datasets and generate_specific_datasets
-- [ ] batch processing for Bedrock
-- [ ] batch processing for Sagemaker endpoint
+- [x] merge generate_all_datasets and generate_specific_datasets
+- [x] add a model_router.py
 - [x] uv
 - [x] from main.py to setup.py
+- [ ] transfer args to settings
+- [ ] batch processing for Bedrock
+- [ ] batch processing for Sagemaker endpoint
 - [ ] better sagemaker inference output parsing
-- [x] add a model_router.py
 
 ## How to Cite This Repository
 

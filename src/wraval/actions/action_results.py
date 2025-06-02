@@ -48,7 +48,7 @@ def show_results(settings: Dynaconf, tone: Optional[str] = None) -> None:
         print("=" * 50)
         
         # Group by model, inference model, and tone, calculate mean of overall_score
-        grouped = d.groupby(['model', 'tone'])['overall_score'].mean()
+        grouped = d.groupby(['inference_model', 'tone'])['overall_score'].mean()
         
         # Normalize scores to 0-100 scale
         normalized = normalize_scores(grouped)

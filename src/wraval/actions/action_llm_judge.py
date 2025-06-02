@@ -4,6 +4,7 @@
 #
 import pandas as pd
 from typing import List, Dict, Optional
+from itertools import product
 from dynaconf import Dynaconf
 from .data_utils import write_dataset, load_latest_dataset
 from .prompts_judge import generate_input_prompt, generate_system_prompt, get_rubric, rewrite_prompt
@@ -63,7 +64,7 @@ def process_tone_data(
     if settings.custom_prompts == True:
         from wraval.custom_prompts.prompts_judge import generate_input_prompt, generate_system_prompt
 
-    dmt = d[d.tone == tone].copy()
+    dmt = d.copy()
     rubrics = list(tone_rubrics.keys())
     
     # Generate prompts
@@ -131,16 +132,25 @@ def judge(
         return
         
     tones = d["tone"].unique()
+    inf_models = d["inference_model"].unique()
     print(f"Found tones: {tones}")
+    print(f"Found inference_models: {inf_models}")
+
+    if settings.type != "all":
+        tones = [settings.type]
     
-    for tone in tones:
-        print(f"\n{'='*20}\n{tone}\n{'='*20}")
+    # Process each tone-model combination that needs scoring
+    for tone, inf_model in product(tones, inf_models):
+        mask = (d.inference_model == inf_model) & (d.tone == tone)
+        # check if any score is missing for this inference model and this tone
+        # If yes, run the eval below
+        if not d[mask].overall_score.isna().any():
+            continue
+            
+        print(f"\n{'='*20}\n{tone} tone\nfor inference model {inf_model}\n{'='*20}")
         
         tone_rubrics = get_rubric(tone.upper())
-        dmt = process_tone_data(settings, d, tone, model_name, client, tone_rubrics)
-        
-        # Update main dataframe
-        mask = (d.tone == tone)
+        dmt = process_tone_data(settings, d[mask], tone, model_name, client, tone_rubrics)
         d.loc[mask, dmt.columns] = dmt.values
     
     # Save results
