@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 import pandas as pd
 import boto3
 import tempfile
@@ -45,7 +45,7 @@ def write_dataset_local(
 
 
 def add_timestamp_to_file_prefix(file_prefix, format):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     return f"{file_prefix}-{timestamp}.{format.lower()}"
 
 
