@@ -114,6 +114,8 @@ You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemak
 - [ ] batch processing for Bedrock
 - [ ] batch processing for Sagemaker endpoint
 - [ ] better sagemaker inference output parsing
+- [x] add a model_router.py
+- [ ] check if model exists in settings.toml to avoid AttributeError: 'Settings' object has no attribute 'ENDPOINT_TYPE'
 
 ## How to Cite This Repository
 
