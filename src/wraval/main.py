@@ -12,6 +12,7 @@ from wraval.actions.action_llm_judge import judge
 from wraval.actions.aws_utils import get_current_aws_account_id
 from wraval.actions.action_results import show_results
 from wraval.actions.action_deploy import deploy
+from wraval.actions.action_examples import show_examples
 import os
 
 
@@ -57,6 +58,7 @@ def parse_args() -> argparse.Namespace:
             "human_judge_upload",
             "human_judge_parsing",
             "show_results",
+            "show_examples",
             "deploy"
         ],
         help="Action to perform (generate data or run inference)",
@@ -124,6 +126,9 @@ def handle_judge(args, settings):
 def handle_show_results(args, settings):
     show_results(settings, args.type)
 
+def handle_show_examples(args, settings):
+    show_examples(settings, args.type)
+
 def handle_deploy(settings):
     deploy(settings)
 
@@ -140,6 +145,8 @@ def main():
             handle_judge(args, settings)
         case "show_results":
             handle_show_results(args, settings)
+        case "show_examples":
+            handle_show_examples(args, settings)
         case "deploy":
             handle_deploy(settings)
         case _:
