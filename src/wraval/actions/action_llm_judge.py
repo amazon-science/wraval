@@ -3,15 +3,30 @@
 # // SPDX-License-Identifier: Apache-2.0
 #
 import pandas as pd
-from typing import List, Dict, Optional
+from typing import List, Dict, Any, Optional
 from itertools import product
 from dynaconf import Dynaconf
 from .data_utils import write_dataset, load_latest_dataset
-from .prompts_judge import generate_input_prompt, generate_system_prompt, get_rubric, rewrite_prompt
-
 from .completion import batch_get_bedrock_completions
 import re
 import boto3
+
+# Import prompt functions based on settings
+def get_prompt_functions(settings: Dynaconf):
+    """Get the appropriate prompt functions based on settings."""
+    if settings.custom_prompts:
+        from wraval.custom_prompts.prompts_judge import (
+            generate_input_prompt,
+            generate_system_prompt,
+            get_rubric
+        )
+    else:
+        from .prompts_judge import (
+            generate_input_prompt,
+            generate_system_prompt,
+            get_rubric
+        )
+    return generate_input_prompt, generate_system_prompt, get_rubric
 
 def extract_score(text: str) -> Optional[int]:
     """Extract score from text using regex pattern.
@@ -60,9 +75,8 @@ def process_tone_data(
     Returns:
         Processed DataFrame with scores
     """
-
-    if settings.custom_prompts == True:
-        from wraval.custom_prompts.prompts_judge import generate_input_prompt, generate_system_prompt
+    # Get the appropriate prompt functions
+    generate_input_prompt, generate_system_prompt, _ = get_prompt_functions(settings)
 
     temp_results = results.copy()
     rubrics = list(tone_rubrics.keys())
@@ -118,9 +132,6 @@ def judge(
         endpoint_type: Type of endpoint to use
     """
 
-    if settings.custom_prompts == True:
-        from wraval.custom_prompts.prompts_judge import get_rubric
-
     try:
         results = load_latest_dataset(settings.data_dir)
         print(f"Loaded dataset with {len(results)} rows")
@@ -139,11 +150,15 @@ def judge(
     if settings.type != "all":
         tones = [settings.type]
     
+    # Get the appropriate prompt functions
+    _, _, get_rubric = get_prompt_functions(settings)
+    
     # Process each tone-model combination that needs scoring
     for tone, inf_model in product(tones, inf_models):
         mask = (results.inference_model == inf_model) & (results.tone == tone)
         # check if any score is missing for this inference model and this tone
-        # If yes, run the eval below
+        if 'overall_score' not in results.columns:
+            results['overall_score'] = None
         if not results[mask].overall_score.isna().any():
             continue
             

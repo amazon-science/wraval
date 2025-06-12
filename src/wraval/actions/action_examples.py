@@ -8,7 +8,7 @@ import pandas as pd
 from typing import Optional
 
 
-def show_examples(settings: Dynaconf, tone: Optional[str] = None, n_examples: int = 3) -> None:
+def get_examples(settings: Dynaconf, tone: Optional[str] = None, n_examples: int = 3) -> None:
     """
     Load the latest dataset and display examples grouped by tone and model.
     

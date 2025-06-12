@@ -39,7 +39,9 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type = 'bedrock'):
             messages = []
             if prompt.examples:
                 for k,v in prompt.examples[0].items():
-                    messages.extend([{"role": k, "content": v}])
+                    # Format each message content as a list of text blocks
+                    messages.extend([{"role": k, "content": [{"text": v}]}])
+            # Format user prompt as a list of text blocks
             usr_prompt = [{"role": "user", "content": [{"text": usr_prompt}]}]
             p = messages + usr_prompt
         else:    

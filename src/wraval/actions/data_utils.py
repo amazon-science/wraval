@@ -122,4 +122,5 @@ def load_latest_dataset(data_dir: str) -> pd.DataFrame:
             raise FileNotFoundError(f"No CSV files found in {data_dir}")
         
         file_path = sorted(files, reverse=True)[0]
+        print(f'Loading {file_path}')
         return pd.read_csv(os.path.join(data_dir, file_path))

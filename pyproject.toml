@@ -28,7 +28,8 @@ dependencies = [
     "numpy",
     "requests",
     "accelerate",
-    "torchvision"
+    "torchvision",
+    "typer"
 ]
 
 [project.scripts]

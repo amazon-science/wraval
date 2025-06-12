@@ -21,7 +21,7 @@ def normalize_scores(d: pd.DataFrame) -> pd.DataFrame:
     return 100 * (d - 1) / 2
 
 
-def show_results(settings: Dynaconf, tone: Optional[str] = None) -> None:
+def get_results(settings: Dynaconf, tone: Optional[str] = None) -> None:
     """
     Load the latest dataset and display normalized results table grouped by tone.
     
