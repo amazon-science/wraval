@@ -6,6 +6,7 @@ import tempfile
 from typing import Optional, List, Tuple
 from urllib.parse import urlparse
 
+s3_client = boto3.client("s3")
 
 def write_dataset(
     df: pd.DataFrame, data_dir: str, file_prefix: str, format: str
@@ -22,7 +23,6 @@ def write_dataset_s3(
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "temp.csv")
         df.to_csv(temp_file, index=False)
-        s3_client = boto3.client("s3")
         key = os.path.join(prefix, 
                            add_timestamp_to_file_prefix(file_prefix, format)
                            )
@@ -64,7 +64,6 @@ def parse_s3_path(s3_path: str) -> Tuple[str, str]:
 
 def list_s3_files(bucket: str, prefix: str, suffix: str = ".csv") -> List[str]:
     """List all files in an S3 bucket with a specific prefix and suffix."""
-    s3_client = boto3.client("s3")
     response = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
     
     if "Contents" not in response:
@@ -88,7 +87,6 @@ def load_latest_dataset_from_s3(bucket: str, prefix: str) -> pd.DataFrame:
     latest_file = sorted(files, reverse=True)[0]
     
     # Download and load the file
-    s3_client = boto3.client("s3")
     with tempfile.NamedTemporaryFile(suffix=".csv") as temp_file:
         s3_client.download_file(bucket, latest_file, temp_file.name)
         return pd.read_csv(temp_file.name)
@@ -124,3 +122,30 @@ def load_latest_dataset(data_dir: str) -> pd.DataFrame:
         file_path = sorted(files, reverse=True)[0]
         print(f'Loading {file_path}')
         return pd.read_csv(os.path.join(data_dir, file_path))
+    
+
+def latest_file_name(data_dir: str) -> str:
+    if is_s3_path(data_dir):
+        bucket, prefix = parse_s3_path(data_dir)
+        files = list_s3_files(bucket, prefix)
+        if not files:
+            raise FileNotFoundError(f"No CSV files found in s3://{bucket}/{prefix}")
+    
+        # Sort files by name (which should include timestamp)
+        latest_file = sorted(files, reverse=True)[0]
+        return latest_file
+    
+    data_dir = os.path.expanduser(data_dir)
+    
+    files = []
+    for f in os.listdir(data_dir):
+        if not f.endswith(".csv"):
+            continue
+        files.append(f)
+    
+    if not files:
+        raise FileNotFoundError(f"No CSV files found in {data_dir}")
+    
+    latest_file = sorted(files, reverse=True)[0]  
+
+    return latest_file 

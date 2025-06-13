@@ -15,6 +15,7 @@ from wraval.actions.aws_utils import get_current_aws_account_id
 from wraval.actions.action_results import get_results
 from wraval.actions.action_deploy import deploy
 from wraval.actions.action_examples import get_examples
+from wraval.actions.action_human_judge_upload import upload_human_judge
 import os
 import typer
 from typing import Optional
@@ -141,6 +142,21 @@ def show_examples(
     """Show examples from the dataset."""
     settings = get_settings(model, tone, custom_prompts, local_tokenizer_path)
     get_examples(settings, tone, n_examples)
+
+@app.command()
+def human_judge_upload(
+    tone: ToneType = typer.Option(ToneType.ALL, "--type", "-t", help="Type of dataset to show examples for"),
+    n_samples: int = typer.Option(10, "--n-samples", "-n", help="Total number of samples to sample for human evaluation."),
+    synthetic_model: int = typer.Option(10, "--synthetic-model", "-sm", help="Synthetic model to sample from."),   
+    inference_model: int = typer.Option(10, "--inference-model", "-im", help="Inference model to sample from"),     
+):
+    """Show results for the dataset."""
+    settings = get_settings()
+    settings.tone = tone
+    settings.n_samples = n_samples
+    settings.synthetic_model = synthetic_model
+    settings.inference_model = inference_model
+    upload_human_judge(settings)
 
 @app.command()
 def deploy(
