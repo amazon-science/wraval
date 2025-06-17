@@ -217,7 +217,7 @@ propcache==0.3.1
     # via
     #   aiohttp
     #   yarl
-protobuf==4.25.7
+protobuf==4.25.8
     # via sagemaker
 psutil==7.0.0
     # via
