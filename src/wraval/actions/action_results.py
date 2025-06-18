@@ -30,6 +30,12 @@ def get_results(settings: Dynaconf, tone: Optional[str] = None) -> None:
         tone: Optional tone to filter by
     """
     try:
+        # Configure pandas to show all rows and columns
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        pd.set_option('display.max_colwidth', None)
+        
         # Use settings.data_dir which could be either local path or S3 URI
         data_location = settings.data_dir
         print(f"Loading data from: {data_location}")
