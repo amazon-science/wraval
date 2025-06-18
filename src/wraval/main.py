@@ -147,15 +147,21 @@ def show_examples(
 def human_judge_upload(
     tone: ToneType = typer.Option(ToneType.ALL, "--type", "-t", help="Type of dataset to show examples for"),
     n_samples: int = typer.Option(10, "--n-samples", "-n", help="Total number of samples to sample for human evaluation."),
-    synthetic_model: int = typer.Option(10, "--synthetic-model", "-sm", help="Synthetic model to sample from."),   
-    inference_model: int = typer.Option(10, "--inference-model", "-im", help="Inference model to sample from"),     
+    synthetic_model: str = typer.Option("haiku-3", "--synthetic-model", "-sm", help="Synthetic model to sample from."),   
+    inference_models: Optional[str] = typer.Option(None, "--inference-models", "-im", help="Comma-separated list of inference models (e.g., 'model1,model2,model3')"),     
 ):
-    """Show results for the dataset."""
+    """Upload human judgment dataset and create a smaller sampled version."""
     settings = get_settings()
     settings.tone = tone
     settings.n_samples = n_samples
     settings.synthetic_model = synthetic_model
-    settings.inference_model = inference_model
+    
+    # Parse comma-separated inference models
+    if inference_models:
+        settings.inference_models = [model.strip() for model in inference_models.split(',')]
+    elif not hasattr(settings, 'inference_models'):
+        settings.inference_models = ["haiku-3"]  # fallback default
+    
     upload_human_judge(settings)
 
 @app.command()
