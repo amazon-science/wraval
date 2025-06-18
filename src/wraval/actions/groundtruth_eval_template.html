@@ -124,14 +124,8 @@
   <h2>Evaluation of the <span style="color: purple;">{{capitalizedTone}}</span> Rewrite</h2>
 
   <p class="context-text-and-video">
-    <span class="context-text">You have a tablet with the Writing Assistant feature.<br>
-      ⚠️ Each task can have a different tone (casual, elaborate, emojify, improve, keypoints, professional, proofread, shorten or witty)
-    </span>
-    <span class="video-container">
-      <crowd-button class="video-toggle">Show/Hide Video</crowd-button>
-      <div class="video-wrapper">
-        <iframe sandbox="allow-scripts allow-same-origin" class="video-embed" src="https://www.youtube.com/embed/A_WZaFWzmQk?start=18&end=37" title="Introducing new AI features on Amazon&#39;s Fire tablets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-      </div>
+    <span class="context-text">You have a tablet with the AI Rewrite feature.<br>
+      ⚠️ Each AI Rewrite can have a different tone: <span style="color: purple;">casual, elaborate, emojify, improve, keypoints, professional, proofread, shorten or witty</span>
     </span>
   </p>
 
@@ -144,7 +138,7 @@
     </div>
 
     <div class="right">
-      <h3><span style="color: purple;">{{capitalizedTone}}</span> Rewrite</h3>
+      <h3><span style="color: purple;">{{capitalizedTone}}</span> AI Rewrite</h3>
       <crowd-card>
         <div class="card">{{ task.input.gen | skip_autoescape}}</div>
       </crowd-card>

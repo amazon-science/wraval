@@ -138,10 +138,10 @@ def judge(
     except FileNotFoundError:
         print("No dataset found. Please generate data first.")
         return
-        
+
     if not validate_dataset(results):
         return
-        
+
     tones = results["tone"].unique()
     inf_models = results["inference_model"].unique()
     print(f"Found tones: {tones}")
@@ -149,10 +149,10 @@ def judge(
 
     if settings.type != "all":
         tones = [settings.type]
-    
+
     # Get the appropriate prompt functions
     _, _, get_rubric = get_prompt_functions(settings)
-    
+
     # Process each tone-model combination that needs scoring
     for tone, inf_model in product(tones, inf_models):
         mask = (results.inference_model == inf_model) & (results.tone == tone)
