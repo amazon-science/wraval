@@ -42,7 +42,7 @@ def run_inference(
 
         tone_prompt = get_prompt(Tone(tone))
 
-        queries = results[results["tone"] == tone]["synthetic_data"]
+        queries = results[results["tone"] == tone]["synthetic_data"].unique()
 
         print(f"Processing {len(queries)} unique inputs for tone: {tone}")
 
@@ -54,7 +54,10 @@ def run_inference(
             results.loc[mask, "rewrite"] = cleaned_output
             results.loc[mask, "inference_model"] = model_name
         else:
-            new_results = results[results["tone"] == tone]
+            new_results = pd.DataFrame({
+                "synthetic_data": results[results["tone"] == tone]["synthetic_data"].unique()
+                })
+            new_results["tone"] = tone
             new_results["rewrite"] = cleaned_output
             new_results["inference_model"] = model_name
             results = pd.concat([results, new_results], ignore_index=True)
