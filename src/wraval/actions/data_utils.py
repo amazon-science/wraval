@@ -5,12 +5,20 @@ import boto3
 import tempfile
 from typing import Optional, List, Tuple
 from urllib.parse import urlparse
+import uuid
 
 s3_client = boto3.client("s3")
 
 def write_dataset(
     df: pd.DataFrame, data_dir: str, file_prefix: str, format: str
 ):
+    # Ensure 'uuid' column exists
+    if 'uuid' not in df.columns:
+        df['uuid'] = None  # or np.nan
+
+    # Fill missing or empty UUIDs
+    df['uuid'] = df['uuid'].apply(lambda x: x if pd.notna(x) and x != '' else str(uuid.uuid4()))
+
     if is_s3_path(data_dir):
         bucket, prefix = parse_s3_path(data_dir)
         write_dataset_s3(df,  bucket, prefix, file_prefix, format)
