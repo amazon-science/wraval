@@ -1,7 +1,7 @@
 [default]
 region = 'us-east-1'
-data_dir = "./data"
-# 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
+data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
+# "./data"
 deploy_bucket_name = 'llm-finetune-us-east-1-{aws_account}'
 deploy_bucket_prefix = 'models'
 sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'

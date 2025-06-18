@@ -4,7 +4,8 @@
 #
 import boto3
 
+
 def get_current_aws_account_id():
-    sts = boto3.client('sts')
+    sts = boto3.client("sts")
     identity = sts.get_caller_identity()
-    return identity['Account']
+    return identity["Account"]

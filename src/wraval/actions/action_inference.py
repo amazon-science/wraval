@@ -8,11 +8,9 @@ from .data_utils import write_dataset, load_latest_dataset
 from .prompt_tones import get_prompt, Tone
 from .model_router import route_completion
 
+
 def run_inference(
-    settings: Dynaconf,
-    model_name: str,
-    upload_s3: bool,
-    data_dir: str
+    settings: Dynaconf, model_name: str, upload_s3: bool, data_dir: str
 ) -> None:
     """Run inference on sentences using the specified model"""
     results = load_latest_dataset(data_dir)
@@ -44,7 +42,7 @@ def run_inference(
 
         queries = results[results["tone"] == tone]["synthetic_data"]
 
-        print(f"Processing {len(queries)} unique inputs for tone: {tone}")
+        print(f"Processing {len(queries)} inputs for tone: {tone}")
 
         outputs = route_completion(settings, queries, tone_prompt)
 
@@ -54,7 +52,10 @@ def run_inference(
             results.loc[mask, "rewrite"] = cleaned_output
             results.loc[mask, "inference_model"] = model_name
         else:
-            new_results = results[results["tone"] == tone]
+            new_results = pd.DataFrame(
+                {"synthetic_data": results[results["tone"] == tone]["synthetic_data"]}
+            )
+            new_results["tone"] = tone
             new_results["rewrite"] = cleaned_output
             new_results["inference_model"] = model_name
             results = pd.concat([results, new_results], ignore_index=True)

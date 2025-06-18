@@ -56,7 +56,7 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
                 # converse_api_params["messages"] = [{"role": "assistant", "content": [{"text": system_prompt}]}] + converse_api_params["messages"]
 
             response = bedrock_client.converse(**converse_api_params)
-            return response['output']['message']['content'][0]['text']
+            return response["output"]["message"]["content"][0]["text"]
 
         except ClientError as err:
             message = err.response["Error"]["Message"]
