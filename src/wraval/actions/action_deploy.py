@@ -12,18 +12,24 @@ PACKAGE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_DIRECTORY = os.path.join(PACKAGE_DIR, "model_artifacts")
 CODE_PATH = "code"
 
+
 def parse_args():
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("--model_name", type=str, required=True, choices=(
-        "Qwen/Qwen2.5-1.5B-Instruct",
-        "microsoft/Phi-3.5-mini-instruct",
-        "microsoft/Phi-4-mini-instruct"
+    arg_parser.add_argument(
+        "--model_name",
+        type=str,
+        required=True,
+        choices=(
+            "Qwen/Qwen2.5-1.5B-Instruct",
+            "microsoft/Phi-3.5-mini-instruct",
+            "microsoft/Phi-4-mini-instruct",
+        ),
     )
-                            )
     arg_parser.add_argument("--bucket_name", type=str, required=True)
     arg_parser.add_argument("--bucket_prefix", type=str, required=True)
     arg_parser.add_argument("--sagemaker_execution_role_arn", type=str, required=True)
     return arg_parser.parse_args()
+
 
 def cleanup_endpoints(endpoint_name):
 
@@ -40,24 +46,24 @@ def cleanup_endpoints(endpoint_name):
     if endpoint_name in endpoints_configs_names:
         sagemaker_client.delete_endpoint_config(EndpointConfigName=endpoint_name)
 
+
 def load_artifacts(settings):
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16
+        bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
     model = AutoModelForCausalLM.from_pretrained(
-        settings.hf_name,
-        device_map="auto",
-        quantization_config=bnb_config
+        settings.hf_name, device_map="auto", quantization_config=bnb_config
     )
 
     tokenizer = AutoTokenizer.from_pretrained(settings.hf_name)
 
     model.save_pretrained(MODEL_DIRECTORY)
     tokenizer.save_pretrained(MODEL_DIRECTORY)
+
 
 def write_model_to_s3(settings, model_name):
     tar_file_name = f"{model_name}.tar.gz"
@@ -73,11 +79,12 @@ def write_model_to_s3(settings, model_name):
     print(f"Model uploaded to: {s3_uri}")
     return s3_uri
 
+
 def deploy_endpoint(s3_uri, role, endpoint_name):
     env = {
         "HF_TASK": "text-generation",
         "HF_HUB_OFFLINE": "1",
-        "HF_MODEL_QUANTIZE": "bitsandbytes"
+        "HF_MODEL_QUANTIZE": "bitsandbytes",
     }
 
     huggingface_model = HuggingFaceModel(
@@ -86,14 +93,15 @@ def deploy_endpoint(s3_uri, role, endpoint_name):
         transformers_version="4.48.0",
         pytorch_version="2.3.0",
         py_version="py311",
-        env=env
+        env=env,
     )
 
     return huggingface_model.deploy(
         initial_instance_count=1,
         instance_type="ml.g5.2xlarge",
-        endpoint_name=endpoint_name
+        endpoint_name=endpoint_name,
     )
+
 
 def validate_deployment(predictor):
     try:
@@ -102,12 +110,13 @@ def validate_deployment(predictor):
         response = sagemaker_runtime_client.invoke_endpoint(
             EndpointName=predictor.endpoint_name,
             Body=input_string.encode("utf-8"),
-            ContentType="application/json"
+            ContentType="application/json",
         )
         print("Test response:", response["Body"].readlines())
     except Exception as e:
         print(f"Validation failed: {e}")
         raise e
+
 
 def validate_model_directory():
     endpoint_code_path = os.path.join(MODEL_DIRECTORY, CODE_PATH)
@@ -129,6 +138,7 @@ def cleanup_model_directory():
         if os.path.isfile(item_path):
             os.remove(item_path)
 
+
 def deploy(settings):
     validate_model_directory()
     cleanup_model_directory()
@@ -136,8 +146,6 @@ def deploy(settings):
     load_artifacts(settings)
     s3_uri = write_model_to_s3(settings, sanitized_model_name)
     predictor = deploy_endpoint(
-        s3_uri,
-        settings.sagemaker_execution_role_arn,
-        sanitized_model_name
+        s3_uri, settings.sagemaker_execution_role_arn, sanitized_model_name
     )
     validate_deployment(predictor)

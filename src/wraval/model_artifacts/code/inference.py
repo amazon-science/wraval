@@ -1,21 +1,21 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
+
 def model_fn(model_dir, *args):
     # Load model from HuggingFace Hub
     bnb_config = BitsAndBytesConfig(
-      load_in_4bit=True,
-      bnb_4bit_quant_type="nf4",
-      bnb_4bit_use_double_quant=True,
-      bnb_4bit_compute_dtype=torch.bfloat16
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
     )
     model = AutoModelForCausalLM.from_pretrained(
-      model_dir,
-      device_map="auto",
-      quantization_config=bnb_config
-  )
+        model_dir, device_map="auto", quantization_config=bnb_config
+    )
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     return model, tokenizer
+
 
 def predict_fn(data, model_and_tokenizer, *args):
     # destruct model and tokenizer

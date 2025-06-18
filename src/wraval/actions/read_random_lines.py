@@ -4,13 +4,16 @@
 #
 import random
 
+
 def read_random_lines(file_path, num_lines=10, seed=None):
     if seed is None:
-        seed = random.randint(0, 2**32 - 1)  # Generate a random seed if none is provided
+        seed = random.randint(
+            0, 2**32 - 1
+        )  # Generate a random seed if none is provided
     random.seed(seed)  # Set the seed for reproducibility
 
     # Step 1: Count total lines in the file
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         total_lines = sum(1 for _ in file)
 
     if num_lines > total_lines:
@@ -21,7 +24,7 @@ def read_random_lines(file_path, num_lines=10, seed=None):
 
     # Step 3: Read only the selected lines
     random_lines = []
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         for current_line_number, line in enumerate(file):
             if current_line_number == selected_line_numbers[0]:
                 random_lines.append(line.strip())
@@ -30,6 +33,7 @@ def read_random_lines(file_path, num_lines=10, seed=None):
                     break
 
     return random_lines, seed
+
 
 # Example usage
 ### file_path = 'example.txt'  # Replace with your file path

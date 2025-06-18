@@ -22,25 +22,20 @@ PROMPT_MAP = {
     "improve": IMPROVE_SENTENCES_PROMPT,
     "keypoints": KEYPOINTS_SENTENCES_PROMPT,
     "proofread": PROOFREAD_SENTENCES_PROMPT,
-    "emojify": EMOJIFY_SENTENCES_PROMPT
+    "emojify": EMOJIFY_SENTENCES_PROMPT,
 }
 
 
-def generate_dataset(
-    settings,
-    dataset_type: str = "witty"
-) -> pd.DataFrame:
+def generate_dataset(settings, dataset_type: str = "witty") -> pd.DataFrame:
     if dataset_type not in PROMPT_MAP:
         valid_types = "\n- ".join(PROMPT_MAP.keys())
         raise ValueError(
             f"Unknown dataset_type: {dataset_type}\n"
             f"Must be one of:\n- {valid_types}"
         )
-    raw_output = route_completion(
-        settings,
-        [PROMPT_MAP[dataset_type]]
-    )
+    raw_output = route_completion(settings, [PROMPT_MAP[dataset_type]])
     return process_raw_output(raw_output[0], Tone(dataset_type))
+
 
 def process_raw_output(output: str, tone: Tone) -> pd.DataFrame:
     """Process raw LLM output into a pandas DataFrame"""
@@ -57,11 +52,9 @@ def process_raw_output(output: str, tone: Tone) -> pd.DataFrame:
         sentences = [line.strip() for line in output.split("\n") if line.strip()]
         return pd.DataFrame(sentences, columns=["synthetic_data"])
 
+
 def generate_tone_data(
-    settings: Dynaconf,
-    model_name: str,
-    upload_s3: bool,
-    tone: str
+    settings: Dynaconf, model_name: str, upload_s3: bool, tone: str
 ) -> None:
     datasets = []
     tones = [tone]
