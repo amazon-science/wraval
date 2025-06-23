@@ -1,5 +1,14 @@
 import os
-from datetime import datetime, UTC
+from datetime import datetime
+
+try:
+    # Python 3.11+
+    UTC = datetime.UTC
+except AttributeError:
+    # Python <3.11
+    from datetime import timezone
+    UTC = timezone.utc
+
 import pandas as pd
 import boto3
 import tempfile
