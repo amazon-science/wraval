@@ -7,7 +7,6 @@ from wraval.aws_config import *  # This will run the config code before any othe
 
 from dynaconf import Dynaconf
 import boto3
-from wraval.actions.prompt_tones import get_all_tones
 from wraval.actions.action_generate import generate_tone_data
 from wraval.actions.action_inference import run_inference
 from wraval.actions.action_llm_judge import judge
@@ -16,6 +15,8 @@ from wraval.actions.action_results import get_results
 from wraval.actions.action_deploy import deploy
 from wraval.actions.action_examples import get_examples
 from wraval.actions.action_human_judge_upload import upload_human_judge
+from wraval.actions.action_human_judge_parsing import parse_human_judgements
+from wraval.actions.action_sagemaker_chat import start_sagemaker_chat
 import os
 import typer
 from typing import Optional
@@ -65,6 +66,7 @@ def get_settings(
     # Format settings with AWS account
     settings.model = settings.model.format(aws_account=settings.aws_account)
     settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
+    settings.human_eval_dir = settings.human_eval_dir.format(aws_account=settings.aws_account)
     settings.deploy_bucket_name = settings.deploy_bucket_name.format(
         aws_account=settings.aws_account
     )
@@ -228,6 +230,12 @@ def human_judge_upload(
 
 
 @app.command()
+def human_judge_parsing():
+    """Parse human judgments, merge it to the original results table and create a plot."""
+    settings = get_settings()
+    parse_human_judgements(settings)
+
+@app.command()
 def deploy(
     model: str = typer.Option("haiku-3", "--model", "-m", help="Model to deploy"),
     cleanup_endpoints: bool = typer.Option(
@@ -247,6 +255,16 @@ def deploy(
     if cleanup_endpoints:
         settings.cleanup_endpoints = True
     deploy(settings)
+
+
+@app.command()
+def sagemaker_chat(
+    endpoint_name: str = typer.Option("Phi-4-mini-instruct-test", help="SageMaker endpoint name"),
+    region: str = typer.Option("us-east-1", help="AWS region"),
+    max_new_tokens: int = typer.Option(1000, help="Max new tokens for generation"),
+):
+    """Start an interactive chat with a SageMaker endpoint."""
+    start_sagemaker_chat(endpoint_name, region, max_new_tokens)
 
 
 def main():
