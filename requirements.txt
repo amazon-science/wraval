@@ -4,7 +4,7 @@ accelerate==1.1.1
     # via wraval (pyproject.toml)
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.11.18
+aiohttp==3.12.14
     # via
     #   datasets
     #   fsspec
