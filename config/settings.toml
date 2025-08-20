@@ -5,7 +5,7 @@ data_dir = 's3://{deploy_bucket_name}/eval/tones/'
 # 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
 human_eval_dir = 's3://{deploy_bucket_name}/human_eval/tones/'
 deploy_bucket_prefix = 'models'
-sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'
+sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-{region}'
 endpoint_type = 'bedrock'
 model = 'anthropic.claude-3-haiku-20240307-v1:0'
 
