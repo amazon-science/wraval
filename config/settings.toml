@@ -45,8 +45,7 @@ endpoint_type = 'sagemaker'
 
 [qwen-3-1-7B]
 model = 'Qwen3-1.7B-Instruct'
-hf_name = 'Qwen/Qwen3-1.7B'
-# instruct is now this, and base is appended with 'base'
+hf_name = 'Qwen/Qwen3-1.7B' # instruct is now this, and base is appended with 'base'
 endpoint_type = 'sagemaker'
 
 [phi-3-ollama]
