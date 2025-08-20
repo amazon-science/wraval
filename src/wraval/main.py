@@ -62,6 +62,11 @@ def get_settings(
     if local_tokenizer_path:
         settings.local_tokenizer_path = local_tokenizer_path
 
+    settings.deploy_bucket_name = settings.deploy_bucket_name.format(region=settings.region, aws_account=settings.aws_account)
+    settings.data_dir = settings.data_dir.format(region=settings.region, aws_account=settings.aws_account)
+    settings.human_eval_dir = settings.human_eval_dir.format(region=settings.region, aws_account=settings.aws_account)
+    settings.sagemaker_execution_role_arn = settings.sagemaker_execution_role_arn.format(region=settings.region, aws_account=settings.aws_account)    
+
     # Format settings with AWS account
     settings.model = settings.model.format(aws_account=settings.aws_account)
     settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
