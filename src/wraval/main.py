@@ -228,7 +228,13 @@ def human_judge_upload(
 
 
 @app.command()
-def deploy(
+def human_judge_parsing():
+    """Parse human judgments, merge it to the original results table and create a plot."""
+    settings = get_settings()
+    parse_human_judgements(settings)
+
+@app.command()
+def deploy_model(
     model: str = typer.Option("haiku-3", "--model", "-m", help="Model to deploy"),
     cleanup_endpoints: bool = typer.Option(
         False,

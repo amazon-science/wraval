@@ -1,7 +1,8 @@
 [default]
-region = 'us-east-1'
+region = 'us-west-2'
 data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
-# "./data"
+# 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
+human_eval_dir = 's3://llm-finetune-us-east-1-{aws_account}/human_eval/tones/'
 deploy_bucket_name = 'llm-finetune-us-east-1-{aws_account}'
 deploy_bucket_prefix = 'models'
 sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'
@@ -40,6 +41,12 @@ endpoint_type = 'sagemaker'
 [qwen-2-5-1-5B]
 model = 'Qwen2-5-1-5B-Instruct'
 hf_name = 'Qwen/Qwen2.5-1.5B-Instruct'
+endpoint_type = 'sagemaker'
+
+[qwen-3-1-7B]
+model = 'Qwen3-1.7B-Instruct'
+hf_name = 'Qwen/Qwen3-1.7B'
+# instruct is now this, and base is appended with 'base'
 endpoint_type = 'sagemaker'
 
 [phi-3-ollama]
