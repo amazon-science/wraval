@@ -45,14 +45,19 @@ class SageMakerRouter(HuggingFaceModelRouter):
     def __init__(self, master_sys_prompt, settings):
         super().__init__(master_sys_prompt, settings)
         self.model_name = settings.model
+        self.region = settings.region
+        if settings.exists('thinking'):
+            self.thinking = settings.thinking
+        else:
+            self.thinking = None
 
     def get_completion(self, queries: List[str]) -> List[str]:
         prompts = [
-            format_prompt(text, self.master_sys_prompt, self.tokenizer, type="hf")
+            format_prompt(text, self.master_sys_prompt, self.tokenizer, "hf", self.thinking)
             for text in queries
         ]
         return [
-            invoke_sagemaker_endpoint({"inputs": prompt}, self.model_name) for prompt in tqdm(prompts)
+            invoke_sagemaker_endpoint({"inputs": prompt}, self.model_name, self.region) for prompt in tqdm(prompts)
         ]
 
 

@@ -45,8 +45,9 @@ def run_inference(
         print(f"Processing {len(queries)} inputs for tone: {tone}")
 
         outputs = route_completion(settings, queries, tone_prompt)
-
+        
         cleaned_output = [o.strip().strip('"') for o in outputs]
+        
         if no_rewrite:
             mask = results["tone"] == tone
             results.loc[mask, "rewrite"] = cleaned_output

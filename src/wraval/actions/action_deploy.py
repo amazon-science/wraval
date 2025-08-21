@@ -106,7 +106,7 @@ def deploy_endpoint(s3_uri, role, endpoint_name):
 def validate_deployment(predictor):
     try:
         sagemaker_runtime_client = boto3.client("sagemaker-runtime")
-        input_string = json.dumps({"inputs": "Hello, my dog is a little"})
+        input_string = json.dumps({"inputs": "<|im_start|>user\nHello, can you pass me the milk?<|im_end|>\n<|im_start|>assistant\n"})
         response = sagemaker_runtime_client.invoke_endpoint(
             EndpointName=predictor.endpoint_name,
             Body=input_string.encode("utf-8"),

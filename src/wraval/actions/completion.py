@@ -15,13 +15,25 @@ import requests
 
 # Function to extract last assistant response from each entry
 def extract_last_assistant_response(data):
-    matches = re.findall(r"<\|assistant\|>(.*?)<\|end\|>", data, re.DOTALL)
-    # matches = re.findall(r"<assistant>(.*?)</assistant>", data, re.DOTALL)
-    if matches:
-        return matches[-1].strip()
-    else:
-        return data
 
+    if r"<\|assistant\|>" in data: # phi
+        assistant_part = data.split(r"<\|assistant\|>")[-1]
+        response = response.replace(r"<\|end\|>", "").strip()
+        return response
+        
+    if r"<|im_start|>assistant" in data: # qwen
+        assistant_part = data.split(r"<|im_start|>assistant")[-1]
+        
+        # Remove the thinking part if it exists
+        if r"<think>" in assistant_part:
+            # Extract everything after </think>
+            response = assistant_part.split(r"</think>")[-1]
+        else:
+            response = assistant_part
+        response = response.replace(r"<|im_end|>", "").strip()
+        return response
+    
+    return data
 
 def get_bedrock_completion(settings, prompt, system_prompt=None):
     bedrock_client = boto3.client(
