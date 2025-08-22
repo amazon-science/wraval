@@ -148,12 +148,7 @@ def deploy(settings):
     load_artifacts(settings)
     s3_uri = write_model_to_s3(settings, sanitized_model_name)
     if settings.exists('async'):
-        async_config = AsyncInferenceConfig(
-            max_concurrency=1000,
-            max_invocations=1000,
-            max_payload_in_mb=1000
-        )
-
+        async_config = AsyncInferenceConfig()
     predictor = deploy_endpoint(
         s3_uri, settings.sagemaker_execution_role_arn, sanitized_model_name, async_config
     )

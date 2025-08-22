@@ -54,7 +54,7 @@ def run_inference(
             results.loc[mask, "inference_model"] = model_name
         else:
             new_results = pd.DataFrame(
-                {"synthetic_data": results[results["tone"] == tone]["synthetic_data"]}
+                {"synthetic_data": results[results["tone"] == tone]["synthetic_data"].unique()}
             )
             new_results["tone"] = tone
             new_results["rewrite"] = cleaned_output
