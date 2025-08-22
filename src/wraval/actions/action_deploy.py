@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 import boto3
 import torch
 from sagemaker.huggingface import HuggingFaceModel
+from sagemaker.async_inference.async_inference_config import AsyncInferenceConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 PACKAGE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -80,7 +81,7 @@ def write_model_to_s3(settings, model_name):
     return s3_uri
 
 
-def deploy_endpoint(s3_uri, role, endpoint_name):
+def deploy_endpoint(s3_uri, role, endpoint_name, async_config=None):
     env = {
         "HF_TASK": "text-generation",
         "HF_HUB_OFFLINE": "1",
@@ -100,6 +101,7 @@ def deploy_endpoint(s3_uri, role, endpoint_name):
         initial_instance_count=1,
         instance_type="ml.g5.2xlarge",
         endpoint_name=endpoint_name,
+        async_inference_config=async_config,
     )
 
 
@@ -145,7 +147,14 @@ def deploy(settings):
     sanitized_model_name = settings.hf_name.split("/")[1].replace(".", "-")
     load_artifacts(settings)
     s3_uri = write_model_to_s3(settings, sanitized_model_name)
+    if settings.exists('async'):
+        async_config = AsyncInferenceConfig(
+            max_concurrency=1000,
+            max_invocations=1000,
+            max_payload_in_mb=1000
+        )
+
     predictor = deploy_endpoint(
-        s3_uri, settings.sagemaker_execution_role_arn, sanitized_model_name
+        s3_uri, settings.sagemaker_execution_role_arn, sanitized_model_name, async_config
     )
     validate_deployment(predictor)

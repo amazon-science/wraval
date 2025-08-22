@@ -40,7 +40,7 @@ def run_inference(
 
         tone_prompt = get_prompt(Tone(tone))
 
-        queries = results[results["tone"] == tone]["synthetic_data"]
+        queries = results[results["tone"] == tone]["synthetic_data"].unique()
 
         print(f"Processing {len(queries)} inputs for tone: {tone}")
 
