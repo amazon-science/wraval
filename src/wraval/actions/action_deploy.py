@@ -144,7 +144,7 @@ def cleanup_model_directory():
 def deploy(settings):
     validate_model_directory()
     cleanup_model_directory()
-    sanitized_model_name = settings.model.split("/")[1].replace(".", "-")
+    sanitized_model_name = settings.model.replace(".", "-")
     load_artifacts(settings)
     s3_uri = write_model_to_s3(settings, sanitized_model_name)
     if settings.exists('async'):
