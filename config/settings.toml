@@ -51,7 +51,7 @@ endpoint_type = 'sagemaker'
 thinking = false
 
 [qwen-3-1-7B-async]
-model = 'Qwen3-1-7B'
+model = 'Qwen3-1-7B-async'
 hf_name = 'Qwen/Qwen3-1.7B' # instruct is now this, and base is appended with 'base'
 endpoint_type = 'sagemaker'
 thinking = false
