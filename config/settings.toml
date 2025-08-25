@@ -41,7 +41,7 @@ endpoint_type = 'sagemaker'
 
 [qwen-3-0-6B]
 model = 'Qwen3-0-6B'
-hf_name = 'Qwen/Qwen3-0-6B' # instruct is now this, and base is appended with 'base'
+hf_name = 'Qwen/Qwen3-0.6B' # instruct is now this, and base is appended with 'base'
 endpoint_type = 'sagemaker'
 thinking = false
 
