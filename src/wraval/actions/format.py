@@ -18,7 +18,7 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type="bedrock", think
 
     if type == "hf":
         if prompt:
-            if thinking is None or True:
+            if thinking is None or thinking is True:
                 sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
             else:
                 sys_prompt = [{"role": "system", "content": prompt.sys_prompt + '/no_think'}]

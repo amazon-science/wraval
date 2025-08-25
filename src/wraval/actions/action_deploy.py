@@ -148,7 +148,7 @@ def deploy(settings):
     load_artifacts(settings)
     s3_uri = write_model_to_s3(settings, sanitized_model_name)
     async_config = None
-    if settings.exists('async'):
+    if settings.exists('asynchronous'):
         async_config = AsyncInferenceConfig()
     predictor = deploy_endpoint(
         s3_uri, settings.sagemaker_execution_role_arn, sanitized_model_name, async_config
