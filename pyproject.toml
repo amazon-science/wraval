@@ -24,7 +24,7 @@ dependencies = [
     "dynaconf~=3.2.7",
     "torch",
     "botocore",
-    "sagemaker==2.244.2",
+    "sagemaker==2.237.3",
     "numpy",
     "requests",
     "accelerate",
