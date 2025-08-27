@@ -11,6 +11,112 @@ wraval generate
 
 > Disclaimer: the deploy action requires a machine that supports bitsandbytes and CUDA. See below.
 
+## Configuration
+
+Before using WRAVAL, you need to set up your AWS environment and configure the application properly.
+
+### 1. AWS Prerequisites
+
+#### AWS Credentials
+Configure your AWS credentials using one of these methods:
+```bash
+# Option 1: AWS CLI
+aws configure
+
+# Option 2: Environment variables
+export AWS_ACCESS_KEY_ID=your_access_key
+export AWS_SECRET_ACCESS_KEY=your_secret_key
+export AWS_DEFAULT_REGION=us-east-1
+
+# Option 3: AWS SSO
+aws sso login --profile your-profile
+export AWS_PROFILE=your-profile
+```
+
+#### Required AWS Permissions
+Your AWS user/role needs permissions for:
+- **Amazon Bedrock**: `bedrock:InvokeModel`, `bedrock:ListFoundationModels`
+- **Amazon SageMaker**: `sagemaker:*` (for model deployment and inference)
+- **Amazon S3**: `s3:GetObject`, `s3:PutObject`, `s3:ListBucket` (for data storage)
+- **IAM**: `sts:GetCallerIdentity` (for account ID retrieval)
+
+#### Enable Bedrock Models
+1. Go to the [Amazon Bedrock console](https://console.aws.amazon.com/bedrock/)
+2. Navigate to "Model access" in the left sidebar
+3. Request access to these models:
+   - `anthropic.claude-3-haiku-20240307-v1:0`
+   - `us.anthropic.claude-3-5-haiku-20241022-v1:0`
+   - `anthropic.claude-3-sonnet-20240229-v1:0`
+   - `us.anthropic.claude-3-5-sonnet-20241022-v2:0`
+   - `amazon.nova-lite-v1:0`
+
+### 2. SageMaker Setup (Optional)
+
+If you plan to use SageMaker endpoints, create a SageMaker execution role:
+
+```bash
+# Create the role (replace YOUR_ACCOUNT_ID with your AWS account ID)
+aws iam create-role \
+  --role-name sagemaker-execution-role-us-east-1 \
+  --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "sagemaker.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }'
+
+# Attach the SageMaker execution policy
+aws iam attach-role-policy \
+  --role-name sagemaker-execution-role-us-east-1 \
+  --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+```
+
+### 3. S3 Bucket Setup (Optional)
+
+If you want to store datasets in S3, create a bucket:
+
+```bash
+# Replace YOUR_ACCOUNT_ID with your AWS account ID
+aws s3 mb s3://llm-finetune-us-east-1-YOUR_ACCOUNT_ID
+```
+
+### 4. Configuration File
+
+The app uses `config/settings.toml` for configuration. The default settings should work for most users, but you may need to adjust:
+
+- **Region**: Change `region = 'us-east-1'` to your preferred region
+- **Data Directory**: Modify `data_dir = "./data"` for local storage, or use S3 path like `s3://your-bucket/path/`
+- **Model Selection**: Choose from available models in the config file
+
+### 5. Verify Configuration
+
+Test your setup with a simple command:
+```bash
+wraval generate --type witty --model nova-lite
+```
+
+If successful, you should see data generation progress. The generated data will be saved to the `./data/` directory by default.
+
+### Common Configuration Issues
+
+**Error: "AWS credentials not found"**
+- Solution: Configure AWS credentials using `aws configure` or environment variables
+
+**Error: "Access denied for Bedrock model"**
+- Solution: Enable the specific model in the Bedrock console under "Model access"
+
+**Error: "S3 bucket does not exist"**
+- Solution: Create the bucket or modify `data_dir` in `config/settings.toml` to use local storage
+
+**Error: "SageMaker execution role not found"**
+- Solution: Create the role as shown above, or use local models only
+
 ## Step by step
 
 ### 1. Start by generating evaluation data for each of the writing assistant tasks (a.k.a. tones)
