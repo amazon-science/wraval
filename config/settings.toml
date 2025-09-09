@@ -1,8 +1,9 @@
 [default]
-region = 'us-east-1'
-data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
-# "./data"
-deploy_bucket_name = 'llm-finetune-us-east-1-{aws_account}'
+region = 'us-west-2'
+deploy_bucket_name = 'llm-finetune-{region}-{aws_account}'
+data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/de/tones/'
+# data_dir = './data/'
+human_eval_dir = 's3://llm-finetune-{region}-{aws_account}/human_eval/tones/'
 deploy_bucket_prefix = 'models'
 sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'
 endpoint_type = 'bedrock'
@@ -22,6 +23,14 @@ endpoint_type = 'bedrock'
 
 [sonnet-3-5]
 model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+endpoint_type = 'bedrock'
+
+[sonnet-3-7]
+model = 'anthropic.claude-3-7-sonnet-20250219-v1:0'
+endpoint_type = 'bedrock'
+
+[sonnet-4]
+model = 'anthropic.claude-sonnet-4-20250514-v1:0'
 endpoint_type = 'bedrock'
 
 [nova-lite]

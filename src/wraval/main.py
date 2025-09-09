@@ -37,6 +37,7 @@ class ToneType(str, Enum):
     PROOFREAD = "proofread"
     EMOJIFY = "emojify"
     SUMMARIZE = "summarize"
+    TRANSLATE = "translate"
 
 
 def get_settings(

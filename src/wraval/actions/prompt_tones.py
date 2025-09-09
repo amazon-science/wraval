@@ -16,6 +16,7 @@ class Tone(Enum):
     IMPROVE = "improve"
     KEYPOINTS = "keypoints"
     SUMMARIZE = "summarize"
+    TRANSLATE = "translate"
 
 def get_all_tones():
     return [tone.value.lower() for tone in Tone]
@@ -42,6 +43,8 @@ def get_prompt(tone: Tone):
             return KeypointsPrompt()
         case Tone.SUMMARIZE:
             return SummarizePrompt()
+        case Tone.TRANSLATE:
+            return TranslatePrompt()
         case _:
             raise ValueError(f"Unknown tone: {tone}")
 
@@ -147,6 +150,21 @@ class KeypointsPrompt(Prompt):
 class SummarizePrompt(Prompt):
     def __init__(self):
         super().__init__(sys_prompt="Provide a concise overview of the main points in the following text.")
+
+
+class TranslatePrompt(Prompt):
+    def __init__(self):
+        super().__init__(
+            sys_prompt="Translate the following text from English to Japanese. Maintain the original meaning, tone, and context as accurately as possible. Only write in japanese characters."
+#             examples=[{
+#                 "user": "Hello, how are you today? I hope you're having a wonderful day.",
+#                 "assistant": "こんにちは、今日の調子はどうですか？素晴らしい一日をお過ごしのことを願っています。"
+#             },
+#             {
+#                 "user": "I would like to order a coffee with milk, please.",
+#                 "assistant": "ミルク入りのコーヒーを注文したいです、お願いします。"
+#             }]
+        )
 
 
 def format_prompt(messages, usr_prompt, tokenizer):
