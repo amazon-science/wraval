@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 import xml.dom.minidom
 
 
-def format_prompt(usr_prompt, prompt=None, tokenizer=None, type="bedrock"):
+def format_prompt(usr_prompt, prompt=None, tokenizer=None, type="bedrock", thinking=None):
     """
     Format prompts according to each model's prompt guidelines (e.g. xml tags for Haiku).
 
@@ -18,7 +18,10 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type="bedrock"):
 
     if type == "hf":
         if prompt:
-            sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
+            if thinking is None or thinking is True:
+                sys_prompt = [{"role": "system", "content": prompt.sys_prompt}]
+            else:
+                sys_prompt = [{"role": "system", "content": prompt.sys_prompt + '/no_think'}]
             messages = []
             if prompt.examples:
                 for k, v in prompt.examples[0].items():
