@@ -37,14 +37,14 @@ wraval inference --model {MODEL_NAME} --endpoint-type sagemaker
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-wraval llm_judge --model nova-lite
+wraval llm-judge --model nova-lite
 ```
 
 ### 4. Finally you can make a human-as-a-judge setup with a Sagemaker Groundtruth task
 
 ```bash
 # By default generates all tone types. A specific tone and model can be specified.
-wraval human_judge
+wraval human-judge
 ```
 
 > Note: ideally different models are used for each step, to avoid bias.
