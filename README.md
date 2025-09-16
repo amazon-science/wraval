@@ -89,36 +89,6 @@ Feel free to add your own for your own purposes in the prompt files.
 
 You can use the [CloudFormation yaml](src/cloudformation.yml) to start a Sagemaker notebook with the permissions to call Bedrock models (make sure you enable the Bedrock models in your AWS console beforehand).
 
-## ToDo
-
-- [ ] make everything a one-liner
-    - [x] 1.pynb
-    - [x] 2.pynb
-    - [x] 3.pynb
-    - [ ] 4a.pynb:
-        - use functions in data_utils
-        - read the tones and models from the last csv retrieved via data_utils
-        - refactor into different functions (1) csv->manifest.jsonl (2) optional hierarchical sampling function
-    - [ ] 4b.pynb:
-        - use functions in data_utils
-        - read the tones and models from the last csv retrieved via data_utils
-        - refactor into different functions (1) get output data on AWS (2) merge it back into the csv and save (3) plot the LLM judge results VS the human feedback
-- [x] run Qwen and Phi as standalone sagemaker endpoints.
-- [x] requirements.txt
-- [x] data
-- [x] 1. data generation -> prompt library
-- [x] 2.b. LLM -> implement this in a modular way in in format_prompt_as_xml
-- [x] merge generate_all_datasets and generate_specific_datasets
-- [x] add a model_router.py
-- [x] uv
-- [x] from main.py to setup.py
-- [ ] transfer args to settings
-- [ ] batch processing for Bedrock
-- [ ] batch processing for Sagemaker endpoint
-- [ ] better sagemaker inference output parsing
-- [x] add a model_router.py
-- [ ] check if model exists in settings.toml to avoid AttributeError: 'Settings' object has no attribute 'ENDPOINT_TYPE'
-
 ## How to Cite This Repository
 
 ```bibtex
