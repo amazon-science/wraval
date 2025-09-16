@@ -26,9 +26,9 @@ wraval generate --type witty --model nova-lite
 
 ```bash
 # Bedrock hosted models on all tones
-wraval inference --model nova-lite --endpoint-type bedrock
+wraval inference --model nova-lite
 # Self-hosted Sagemaker models on all tones
-wraval inference --model {MODEL_NAME} --endpoint-type sagemaker
+wraval inference --model {MODEL_NAME}
 ```
 
 > Note: `MODEL_NAME` uses the proposed mapping in `settings.toml`.
