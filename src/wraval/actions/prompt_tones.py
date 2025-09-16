@@ -4,6 +4,7 @@
 #
 from .format import format_prompt
 from enum import Enum
+from typing import Optional
 
 class Tone(Enum):
     EMOJIFY = "emojify"
@@ -21,7 +22,7 @@ class Tone(Enum):
 def get_all_tones():
     return [tone.value.lower() for tone in Tone]
 
-def get_prompt(tone: Tone):
+def get_prompt(tone: Tone, *, source_language: Optional[str] = None, target_language: Optional[str] = None):
     match tone:
         case Tone.EMOJIFY:
             return EmojifyPrompt()
@@ -44,7 +45,7 @@ def get_prompt(tone: Tone):
         case Tone.SUMMARIZE:
             return SummarizePrompt()
         case Tone.TRANSLATE:
-            return TranslatePrompt()
+            return TranslatePrompt(source_language=source_language, target_language=target_language)
         case _:
             raise ValueError(f"Unknown tone: {tone}")
 
@@ -153,18 +154,20 @@ class SummarizePrompt(Prompt):
 
 
 class TranslatePrompt(Prompt):
-    def __init__(self):
-        super().__init__(
-            sys_prompt="Translate the following text from English to Japanese. Maintain the original meaning, tone, and context as accurately as possible. Only write in japanese characters."
-#             examples=[{
-#                 "user": "Hello, how are you today? I hope you're having a wonderful day.",
-#                 "assistant": "こんにちは、今日の調子はどうですか？素晴らしい一日をお過ごしのことを願っています。"
-#             },
-#             {
-#                 "user": "I would like to order a coffee with milk, please.",
-#                 "assistant": "ミルク入りのコーヒーを注文したいです、お願いします。"
-#             }]
+    def __init__(self, source_language: Optional[str] = None, target_language: Optional[str] = None):
+        src = (source_language or "auto").strip()
+        tgt = (target_language or "Japanese").strip()
+        if src.lower() in ("auto", "detect", "autodetect"):
+            direction = f"Translate the following text to {tgt}."
+        else:
+            direction = f"Translate the following text from {src} to {tgt}."
+
+        sys_prompt = (
+            f"{direction} Maintain the original meaning, tone, and context as accurately as possible. Use authentic spelling and conventions. Avoid stereotypical expressions that might seem like caricatures. Only output the translated text, no other text."
         )
+        if tgt.lower() in ("japanese", "ja", "jp"):
+            sys_prompt += " Only write in japanese characters."
+        super().__init__(sys_prompt=sys_prompt)
 
 
 def format_prompt(messages, usr_prompt, tokenizer):

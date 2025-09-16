@@ -13,17 +13,36 @@ def get_examples(
 ) -> None:
     """
     Load the latest dataset and display examples grouped by tone and model.
-
-    Args:
-        settings: Dynaconf settings object with data_dir setting
-        tone: Optional tone to filter by
-        n_examples: Number of examples to show per tone-model combination
     """
     try:
-        # Use settings.data_dir which could be either local path or S3 URI
         data_location = settings.data_dir
         print(f"Loading data from: {data_location}")
         d = load_latest_dataset(data_location)
+
+        # Columns required for grouping/selection
+        required_group_cols = ["tone", "inference_model"]
+        missing_group = [c for c in required_group_cols if c not in d.columns]
+        if missing_group:
+            print(f"Warning: Missing columns {missing_group}. Showing raw examples instead.")
+            # Show a few raw examples without grouping
+            examples = d.head(n_examples)
+            for idx, row in examples.iterrows():
+                original = row.get("synthetic_data", "<missing synthetic_data>")
+                rewrite = row.get("rewrite", "<missing rewrite>")
+                score_val = row.get("overall_score", None)
+                if pd.notna(score_val):
+                    try:
+                        score = f"{float(score_val):.2f}"
+                    except Exception:
+                        score = str(score_val)
+                else:
+                    score = "N/A"
+                print(f"\nExample {idx + 1}:")
+                print(f"Original: {original}")
+                print(f"Rewrite:  {rewrite}")
+                print(f"Score:    {score}")
+                print("-" * 40)
+            return
 
         if tone and tone != "all":
             if tone not in d["tone"].unique():
@@ -35,35 +54,36 @@ def get_examples(
         else:
             print("\nExamples by Tone and Model:")
 
-        # Get unique combinations of tone and inference_model
         combinations = d[["tone", "inference_model"]].drop_duplicates()
-
-        for _, (tone, model) in combinations.iterrows():
+        for _, (tone_val, model) in combinations.iterrows():
             print("\n" + "=" * 80)
-            print(f"Tone: {tone} | Model: {model}")
+            print(f"Tone: {tone_val} | Model: {model}")
             print("=" * 80)
 
-            # Get examples for this tone-model combination
-            examples = d[(d["tone"] == tone) & (d["inference_model"] == model)]
-
-            # Sample n_examples if we have more
+            examples = d[(d["tone"] == tone_val) & (d["inference_model"] == model)]
             if len(examples) > n_examples:
                 examples = examples.sample(n=n_examples, random_state=42)
 
-            # Display each example
             for idx, row in examples.iterrows():
+                original = row.get("synthetic_data", "<missing synthetic_data>")
+                rewrite = row.get("rewrite", "<missing rewrite>")
+                score_val = row.get("overall_score", None)
+                if pd.notna(score_val):
+                    try:
+                        score = f"{float(score_val):.2f}"
+                    except Exception:
+                        score = str(score_val)
+                else:
+                    score = "N/A"
                 print(f"\nExample {idx + 1}:")
-                print(f"Original: {row['synthetic_data']}")
-                print(f"Rewrite:  {row['rewrite']}")
-                print(f"Score:    {row['overall_score']:.2f}")
+                print(f"Original: {original}")
+                print(f"Rewrite:  {rewrite}")
+                print(f"Score:    {score}")
                 print("-" * 40)
 
     except FileNotFoundError as e:
         print(f"Error: {e}")
         print("Please generate and judge data first.")
-    except KeyError as e:
-        print(
-            f"Error: Missing required column {e}. Please ensure the dataset has been properly judged."
-        )
     except Exception as e:
+        # Catch-all that logs and keeps the program alive
         print(f"Unexpected error: {e}")

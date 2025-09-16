@@ -5,7 +5,7 @@
 from dynaconf import Dynaconf
 from wraval.actions.data_utils import load_latest_dataset
 import pandas as pd
-from typing import Optional
+from typing import Optional, Literal
 
 
 def normalize_scores(d: pd.DataFrame) -> pd.DataFrame:
@@ -21,7 +21,11 @@ def normalize_scores(d: pd.DataFrame) -> pd.DataFrame:
     return 100 * (d - 1) / 2
 
 
-def get_results(settings: Dynaconf, tone: Optional[str] = None) -> None:
+def get_results(
+    settings: Dynaconf,
+    tone: Optional[str] = None,
+    metric: Literal["mean", "mean_sem", "median_iqr"] = "mean",
+) -> None:
     """
     Load the latest dataset and display normalized results table grouped by tone.
 
@@ -53,14 +57,37 @@ def get_results(settings: Dynaconf, tone: Optional[str] = None) -> None:
 
         print("=" * 50)
 
-        # Group by model, inference model, and tone, calculate mean of overall_score
-        grouped = d.groupby(["inference_model", "tone"])["overall_score"].mean()
+        # Group by inference model and tone
+        group = d.groupby(["inference_model", "tone"])["overall_score"]
 
-        # Normalize scores to 0-100 scale
-        normalized = normalize_scores(grouped)
+        # Prepare outputs based on the requested metric
+        if metric == "mean":
+            result = group.mean()
+            # Normalize central tendency (mean)
+            result = normalize_scores(result)
+        elif metric == "mean_sem":
+            mean_series = group.mean()
+            sem_series = group.sem(ddof=1)
+            # Normalize: mean to 0-100; sem scales by 50 due to linear transform
+            mean_series = normalize_scores(mean_series)
+            sem_series = sem_series * 50
+            result = pd.DataFrame({"mean": mean_series, "sem": sem_series})
+        elif metric == "median_iqr":
+            median_series = group.median()
+            q75 = group.quantile(0.75)
+            q25 = group.quantile(0.25)
+            iqr_series = q75 - q25
+            # Normalize: median to 0-100; iqr scales by 50
+            median_series = normalize_scores(median_series)
+            iqr_series = iqr_series * 50
+            result = pd.DataFrame({"median": median_series, "iqr": iqr_series})
+        else:
+            raise ValueError(
+                f"Unsupported metric '{metric}'. Choose from 'mean', 'mean_sem', 'median_iqr'."
+            )
 
         # Display results rounded to 2 decimal places
-        print(normalized.round(2))
+        print(result.round(2))
         print("=" * 50)
         print("\nNote: Scores are normalized to 0-100 scale (0=poor, 100=excellent)")
     except FileNotFoundError as e:
@@ -68,7 +95,7 @@ def get_results(settings: Dynaconf, tone: Optional[str] = None) -> None:
         print("Please generate and judge data first.")
     except KeyError as e:
         print(
-            f"Error: Missing required column {e}. Please ensure the dataset has been properly judged."
+            f"Error: Missing required column {e}. Please ensure all wraval steps have been executed up to and including the llm judge."
         )
     except Exception as e:
         print(f"Unexpected error: {e}")

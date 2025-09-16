@@ -51,9 +51,14 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
                     {"additionalModelRequestFields": {"top_p": 1}}
                 )
 
-            if isinstance(system_prompt.sys_prompt, str) and len(system_prompt.sys_prompt) > 0:
-                converse_api_params.update({"system": [{"text": system_prompt.sys_prompt}]})
-                # converse_api_params["messages"] = [{"role": "assistant", "content": [{"text": system_prompt}]}] + converse_api_params["messages"]
+            if isinstance(system_prompt, str) and len(system_prompt) > 0:
+                converse_api_params.update({"system": [{"text": system_prompt}]})
+            elif isinstance(system_prompt.sys_prompt, str) and len(system_prompt.sys_prompt) > 0:
+                    converse_api_params.update({"system": [{"text": system_prompt.sys_prompt}]})
+                    # converse_api_params["messages"] = [{"role": "assistant", "content": [{"text": system_prompt}]}] + converse_api_params["messages"]
+            else:
+                print(f"No system prompt provided in string or object format")
+
 
             response = bedrock_client.converse(**converse_api_params)
             return response["output"]["message"]["content"][0]["text"]
@@ -116,7 +121,8 @@ def process_prompt(index, prompt, system_prompt, settings):
         response = get_bedrock_completion(settings, prompt, system_prompt)
         return index, response
     except Exception as e:
-        return index, f"Error processing prompt {index}: {str(e)}"
+        print(f"Error processing prompt {prompt} and sys_prompt {system_prompt}")
+        raise e
 
 
 # Add this new function for future use

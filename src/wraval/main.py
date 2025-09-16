@@ -40,6 +40,13 @@ class ToneType(str, Enum):
     TRANSLATE = "translate"
 
 
+# Results metrics for show_results
+class ResultsMetric(str, Enum):
+    MEAN = "mean"
+    MEAN_SEM = "mean_sem"
+    MEDIAN_IQR = "median_iqr"
+
+
 def get_settings(
     model: str = "haiku-3",
     tone: ToneType = ToneType.ALL,
@@ -65,9 +72,13 @@ def get_settings(
 
     # Format settings with AWS account
     settings.model = settings.model.format(aws_account=settings.aws_account)
-    settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
+    settings.data_dir = settings.data_dir.format(
+        aws_account=settings.aws_account,
+        region=settings.region
+    )
     settings.deploy_bucket_name = settings.deploy_bucket_name.format(
-        aws_account=settings.aws_account
+        aws_account=settings.aws_account,
+        region=settings.region
     )
     settings.sagemaker_execution_role_arn = (
         settings.sagemaker_execution_role_arn.format(aws_account=settings.aws_account)
@@ -112,9 +123,25 @@ def inference(
     local_tokenizer_path: Optional[str] = typer.Option(
         None, "--local-tokenizer-path", help="Path to local tokenizer"
     ),
+    source_language: Optional[str] = typer.Option(
+        None,
+        "--source-language",
+        "-i",
+        help="Source language (name or ISO code) for translation",
+    ),
+    target_language: Optional[str] = typer.Option(
+        None,
+        "--target-language",
+        "-o",
+        help="Target language (name or ISO code) for translation",
+    ),
 ):
     """Run inference on the dataset using the specified model."""
     settings = get_settings(model, tone, custom_prompts, local_tokenizer_path)
+    if source_language:
+        settings.source_language = source_language
+    if target_language:
+        settings.target_language = target_language
     run_inference(settings, model, upload_s3, settings.data_dir)
 
 
@@ -159,11 +186,17 @@ def llm_judge(
 def show_results(
     tone: ToneType = typer.Option(
         ToneType.ALL, "--type", "-t", help="Type of dataset to show examples for"
-    )
+    ),
+    metric: ResultsMetric = typer.Option(
+        ResultsMetric.MEAN,
+        "--metric",
+        "-mtr",
+        help="Results summary metric: 'mean', 'mean_sem', or 'median_iqr'",
+    ),
 ):
     """Show results for the dataset."""
     settings = get_settings()
-    get_results(settings, tone)
+    get_results(settings, tone, metric.value)
 
 
 @app.command()
@@ -178,15 +211,9 @@ def show_examples(
         "-n",
         help="Number of examples to show per tone-model combination",
     ),
-    custom_prompts: bool = typer.Option(
-        False, "--custom-prompts", help="Load custom prompts from a prompt folder"
-    ),
-    local_tokenizer_path: Optional[str] = typer.Option(
-        None, "--local-tokenizer-path", help="Path to local tokenizer"
-    ),
 ):
     """Show examples from the dataset."""
-    settings = get_settings(model, tone, custom_prompts, local_tokenizer_path)
+    settings = get_settings(model, tone)
     get_examples(settings, tone, n_examples)
 
 

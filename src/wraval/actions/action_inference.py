@@ -9,6 +9,19 @@ from .prompt_tones import get_prompt, Tone
 from .model_router import route_completion
 
 
+# Import prompt functions based on settings
+def get_prompt_functions(settings: Dynaconf):
+    """Get the appropriate prompt functions based on settings."""
+    if settings.custom_prompts:
+        from wraval.custom_prompts.prompt_tones import (
+            get_prompt, Tone
+        )
+    else:
+        from .prompt_tones import (
+            get_prompt, Tone
+        )
+    return get_prompt, Tone
+
 def run_inference(
     settings: Dynaconf, model_name: str, upload_s3: bool, data_dir: str
 ) -> None:
@@ -22,6 +35,9 @@ def run_inference(
             no_rewrite = True
             results["rewrite"] = None
             results["inference_model"] = None
+
+    # Get the appropriate prompt functions
+    get_prompt, Tone = get_prompt_functions(settings)
 
     tones = results["tone"].unique()
     print(f"Found tones: {tones}")
@@ -38,7 +54,14 @@ def run_inference(
         """
         )
 
-        tone_prompt = get_prompt(Tone(tone))
+        if hasattr(Tone, "TRANSLATE") and tone == Tone.TRANSLATE.value:
+            tone_prompt = get_prompt(
+                Tone(tone),
+                source_language=getattr(settings, "source_language", None),
+                target_language=getattr(settings, "target_language", None),
+            )
+        else:
+            tone_prompt = get_prompt(Tone(tone))
 
         queries = results[results["tone"] == tone]["synthetic_data"] #.unique()
 
@@ -49,9 +72,6 @@ def run_inference(
         cleaned_output = [o.strip().strip('"') for o in outputs]
         if no_rewrite:
             mask = results["tone"] == tone
-
-            import pdb; pdb.set_trace()
-
             results.loc[mask, "rewrite"] = cleaned_output
             results.loc[mask, "inference_model"] = model_name
         else:
