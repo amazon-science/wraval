@@ -5,6 +5,8 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 ## Quick start
 
 ```bash
+uv venv
+source .venv/bin/activate
 uv pip install .
 wraval generate
 ```
