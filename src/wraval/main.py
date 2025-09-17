@@ -54,6 +54,7 @@ def get_settings(
         ],
         env=f"default,{model}",
         environments=True,
+        case_sensitive=False,
     )
 
     if settings.endpoint_type in ("bedrock", "sagemaker"):
