@@ -29,7 +29,8 @@ dependencies = [
     "requests",
     "accelerate",
     "torchvision",
-    "typer"
+    "typer",
+    "dspy-ai>=2.5.0"
 ]
 
 [project.scripts]

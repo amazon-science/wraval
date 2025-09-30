@@ -1,12 +1,18 @@
 [default]
 region = 'us-east-1'
-data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
-# "./data"
+# data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
+data_dir = "./data"
 deploy_bucket_name = 'llm-finetune-us-east-1-{aws_account}'
 deploy_bucket_prefix = 'models'
 sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'
-endpoint_type = 'bedrock'
-model = 'anthropic.claude-3-haiku-20240307-v1:0'
+endpoint_type = 'dspy'
+model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+dspy_provider = 'bedrock'
+dspy_model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+dspy_program = 'rewrite'
+dspy_temperature = 0.2
+dspy_max_tokens = 2048
+dspy_compile = 'gepa'
 
 [haiku-3]
 model = 'anthropic.claude-3-haiku-20240307-v1:0'
@@ -51,3 +57,52 @@ endpoint_type = 'ollama'
 model = 'Phi-4-mini-instruct'
 hf_name = 'microsoft/Phi-4-mini-instruct'
 endpoint_type = 'sagemaker'
+
+[dspy-sonnet-3-5]
+endpoint_type = 'dspy'
+model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+dspy_provider = 'bedrock'
+dspy_model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+dspy_program = 'rewrite'
+dspy_temperature = 0.2
+dspy_max_tokens = 2048
+
+[dspy-student-teacher]
+endpoint_type = 'dspy'
+# Student model (generates predictions)
+model = 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
+dspy_provider = 'bedrock'
+dspy_model = 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
+# Teacher model (judges predictions)
+dspy_teacher_model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+dspy_program = 'rewrite'
+dspy_temperature = 0.2
+dspy_max_tokens = 2048
+dspy_compile = 'gepa'
+dspy_devset_size = 5
+# GEPA settings for minimal experiment
+dspy_gepa_iterations = 2
+dspy_gepa_minibatch_size = 2
+dspy_gepa_num_threads = 1
+dspy_gepa_auto_mode = 'light'
+dspy_gepa_track_stats = false
+
+[dspy-minimal]
+endpoint_type = 'dspy'
+# Student model (generates predictions)
+model = 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
+dspy_provider = 'bedrock'
+dspy_model = 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
+# Teacher model (judges predictions)
+dspy_teacher_model = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+dspy_program = 'rewrite'
+dspy_temperature = 0.2
+dspy_max_tokens = 2048
+dspy_compile = 'gepa'
+dspy_devset_size = 3
+# GEPA settings for ultra-minimal experiment
+dspy_gepa_iterations = 1
+dspy_gepa_minibatch_size = 1
+dspy_gepa_num_threads = 1
+dspy_gepa_auto_mode = 'light'
+dspy_gepa_track_stats = false

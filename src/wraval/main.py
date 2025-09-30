@@ -40,7 +40,7 @@ class ToneType(str, Enum):
 
 
 def get_settings(
-    model: str = "haiku-3",
+    model: str = "dspy-sonnet-3-5",
     tone: ToneType = ToneType.ALL,
     custom_prompts: bool = False,
     local_tokenizer_path: Optional[str] = None,
@@ -57,21 +57,25 @@ def get_settings(
         case_sensitive=False,
     )
 
-    if settings.endpoint_type in ("bedrock", "sagemaker"):
+    # Ensure AWS account resolution for AWS-backed endpoints and DSPy with Bedrock
+    if settings.endpoint_type in ("bedrock", "sagemaker") or (
+        settings.endpoint_type == "dspy" and getattr(settings, "dspy_provider", "") == "bedrock"
+    ):
         settings.aws_account = get_current_aws_account_id()
 
     if local_tokenizer_path:
         settings.local_tokenizer_path = local_tokenizer_path
 
-    # Format settings with AWS account
-    settings.model = settings.model.format(aws_account=settings.aws_account)
-    settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
-    settings.deploy_bucket_name = settings.deploy_bucket_name.format(
-        aws_account=settings.aws_account
-    )
-    settings.sagemaker_execution_role_arn = (
-        settings.sagemaker_execution_role_arn.format(aws_account=settings.aws_account)
-    )
+    # Format settings with AWS account if present
+    if hasattr(settings, "aws_account"):
+        settings.model = settings.model.format(aws_account=settings.aws_account)
+        settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
+        settings.deploy_bucket_name = settings.deploy_bucket_name.format(
+            aws_account=settings.aws_account
+        )
+        settings.sagemaker_execution_role_arn = (
+            settings.sagemaker_execution_role_arn.format(aws_account=settings.aws_account)
+        )
     settings.type = tone
     settings.custom_prompts = custom_prompts
 
@@ -191,6 +195,17 @@ def show_examples(
 
 
 @app.command()
+def make_devset_cmd(
+    model: str = typer.Option("dspy-sonnet-3-5", "--model", "-m", help="Profile to read settings from"),
+    size: int = typer.Option(50, "--size", "-n", help="Number of rows to sample"),
+    input_col: Optional[str] = typer.Option(None, "--input-col", help="Override input column name"),
+    output_col: Optional[str] = typer.Option(None, "--output-col", help="Override output column name"),
+    out_path: str = typer.Option("./data/devset.csv", "--out", help="Output CSV path"),
+):
+    """Create a small devset CSV with columns [input, output] from the latest dataset."""
+    settings = get_settings(model)
+    path = make_devset(settings, size=size, input_col=input_col, output_col=output_col, out_path=out_path)
+    print(f"Devset written to: {path}")
 def human_judge_upload(
     tone: ToneType = typer.Option(
         ToneType.ALL, "--type", "-t", help="Type of dataset to show examples for"
