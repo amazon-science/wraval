@@ -11,17 +11,30 @@ import json
 import boto3
 import re
 import requests
+import uuid
 
 
 # Function to extract last assistant response from each entry
 def extract_last_assistant_response(data):
-    matches = re.findall(r"<\|assistant\|>(.*?)<\|end\|>", data, re.DOTALL)
-    # matches = re.findall(r"<assistant>(.*?)</assistant>", data, re.DOTALL)
-    if matches:
-        return matches[-1].strip()
-    else:
-        return data
 
+    if r"<\|assistant\|>" in data: # phi
+        assistant_part = data.split(r"<\|assistant\|>")[-1]
+        response = response.replace(r"<\|end\|>", "").strip()
+        return response
+        
+    if r"<|im_start|>assistant" in data: # qwen
+        assistant_part = data.split(r"<|im_start|>assistant")[-1]
+        
+        # Remove the thinking part if it exists
+        if r"<think>" in assistant_part:
+            # Extract everything after </think>
+            response = assistant_part.split(r"</think>")[-1]
+        else:
+            response = assistant_part
+        response = response.replace(r"<|im_end|>", "").strip()
+        return response
+    
+    return data
 
 def get_bedrock_completion(settings, prompt, system_prompt=None):
     bedrock_client = boto3.client(
@@ -220,3 +233,144 @@ def invoke_ollama_endpoint(payload, endpoint_name, url="127.0.0.1:11434"):
             lines.append(json.loads(r))
 
     return "".join([l["response"] for l in lines])
+
+
+def batch_invoke_sagemaker_endpoint(
+    payloads,
+    endpoint_name,
+    region="us-east-1",
+    s3_bucket=None,
+    s3_input_prefix="/eval/async/input/",
+    poll_interval_seconds=10,
+    timeout_seconds=600,
+):
+    """
+    Invoke a SageMaker async endpoint for a batch of payloads.
+
+    - payloads: list of JSON-serializable objects (each is one request)
+    - endpoint_name: name of the async SageMaker endpoint
+    - region: AWS region
+    - s3_bucket: S3 bucket to upload inputs (required)
+    - s3_input_prefix: S3 prefix for input uploads
+    - poll_interval_seconds: interval between checks for output readiness
+    - timeout_seconds: max time to wait for each result
+
+    Returns list of raw results (strings) in the same order as payloads.
+    """
+    if s3_bucket is None:
+        raise ValueError("s3_bucket is required for async invocations")
+    if not isinstance(s3_bucket, str) or not s3_bucket.strip():
+        raise ValueError(
+            "s3_bucket must be a non-empty string (e.g., 'my-bucket-name'), got: "
+            f"{type(s3_bucket).__name__}"
+        )
+
+    sagemaker_runtime = boto3.client("sagemaker-runtime", region_name=region)
+    s3_client = boto3.client("s3", region_name=region)
+
+    # Normalize prefix
+    input_prefix = s3_input_prefix.lstrip("/")
+
+    input_locations = []
+    output_locations = []
+    inference_ids = []
+
+    # 1) Upload all payloads and invoke async endpoint
+    for idx, payload in enumerate(payloads):
+        print(f"Submitting {idx + 1}/{len(payloads)} to async endpoint '{endpoint_name}'...")
+        request_id = str(uuid.uuid4())[:8]
+        input_key = f"{input_prefix}batch-{request_id}-{idx}.json"
+
+        # Ensure payload is in expected format for the model container
+        if isinstance(payload, str):
+            payload_to_upload = {"inputs": payload}
+        elif isinstance(payload, list) and all(isinstance(p, str) for p in payload):
+            payload_to_upload = {"inputs": payload}
+        elif isinstance(payload, dict):
+            payload_to_upload = payload
+        else:
+            # Fallback: wrap unknown types under inputs
+            payload_to_upload = {"inputs": payload}
+
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=input_key,
+            Body=json.dumps(payload_to_upload),
+            ContentType="application/json",
+        )
+
+        input_location = f"s3://{s3_bucket}/{input_key}"
+        input_locations.append(input_location)
+
+        response = sagemaker_runtime.invoke_endpoint_async(
+            EndpointName=endpoint_name,
+            InputLocation=input_location,
+            ContentType="application/json",
+            InvocationTimeoutSeconds=3600,
+        )
+
+        output_locations.append(response["OutputLocation"])  # s3 uri
+        inference_ids.append(response.get("InferenceId"))
+        print(f"Submitted {idx + 1}/{len(payloads)}. Output will be written to {response['OutputLocation']}")
+
+    # 2) Poll for each output and download results
+    results = []
+    for i, output_location in enumerate(output_locations):
+        start_time = time.time()
+
+        # Parse s3 uri and derive expected result key: <prefix>/<InferenceId>.out
+        uri = output_location.replace("s3://", "")
+        bucket, key = uri.split("/", 1)
+        inference_id = inference_ids[i]
+        expected_key = f"{key.rstrip('/')}/{inference_id}.out" if isinstance(inference_id, str) and inference_id else key
+        if expected_key != key:
+            print(f"Polling for result object s3://{bucket}/{expected_key}")
+
+        while True:
+            try:
+                # First, check expected result key (InferenceId.out)
+                s3_client.head_object(Bucket=bucket, Key=expected_key)
+                break
+            except Exception:
+                if time.time() - start_time > timeout_seconds:
+                    print(f"Timed out waiting for result {i + 1}/{len(output_locations)} after {timeout_seconds}s")
+                    results.append(None)
+                    break
+                elapsed = int(time.time() - start_time)
+                print(f"Waiting for result {i + 1}/{len(output_locations)}... {elapsed}s elapsed")
+
+                # Try to detect async failure artifact: async-endpoint-failures/.../<InferenceId>-error.out
+                if isinstance(inference_id, str) and inference_id:
+                    try:
+                        candidates = s3_client.list_objects_v2(
+                            Bucket=bucket,
+                            Prefix="async-endpoint-failures/",
+                            MaxKeys=1000,
+                        )
+                        for obj in candidates.get("Contents", []):
+                            k = obj.get("Key", "")
+                            if k.endswith(f"{inference_id}-error.out"):
+                                err_obj = s3_client.get_object(Bucket=bucket, Key=k)
+                                err_text = err_obj["Body"].read().decode("utf-8", errors="replace")
+                                print(f"Error for request {i + 1}/{len(output_locations)} (InferenceId={inference_id}):\n{err_text}")
+                                results.append(None)
+                                # Stop waiting for this one
+                                elapsed = int(time.time() - start_time)
+                                print(f"Marking request {i + 1} as failed after {elapsed}s due to async failure artifact: s3://{bucket}/{k}")
+                                # Break out of the polling loop
+                                raise StopIteration
+                    except StopIteration:
+                        break
+                    except Exception:
+                        # Ignore listing errors silently and keep polling
+                        pass
+                time.sleep(poll_interval_seconds)
+
+        if len(results) == 0 or results[-1] is not None:
+            obj = s3_client.get_object(Bucket=bucket, Key=key)
+            result_body = obj["Body"].read().decode("utf-8")
+            results.append(result_body)
+            total = int(time.time() - start_time)
+            print(f"Result ready for {i + 1}/{len(output_locations)} after {total}s")
+
+    return results

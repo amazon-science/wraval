@@ -63,6 +63,11 @@ def get_settings(
     if local_tokenizer_path:
         settings.local_tokenizer_path = local_tokenizer_path
 
+    settings.deploy_bucket_name = settings.deploy_bucket_name.format(region=settings.region, aws_account=settings.aws_account)
+    settings.data_dir = settings.data_dir.format(region=settings.region, aws_account=settings.aws_account)
+    settings.human_eval_dir = settings.human_eval_dir.format(region=settings.region, aws_account=settings.aws_account)
+    settings.sagemaker_execution_role_arn = settings.sagemaker_execution_role_arn.format(region=settings.region, aws_account=settings.aws_account)    
+
     # Format settings with AWS account
     settings.model = settings.model.format(aws_account=settings.aws_account)
     settings.data_dir = settings.data_dir.format(aws_account=settings.aws_account)
@@ -229,7 +234,13 @@ def human_judge_upload(
 
 
 @app.command()
-def deploy(
+def human_judge_parsing():
+    """Parse human judgments, merge it to the original results table and create a plot."""
+    settings = get_settings()
+    parse_human_judgements(settings)
+
+@app.command()
+def deploy_model(
     model: str = typer.Option("haiku-3", "--model", "-m", help="Model to deploy"),
     cleanup_endpoints: bool = typer.Option(
         False,

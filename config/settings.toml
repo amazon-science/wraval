@@ -1,10 +1,12 @@
 [default]
-region = 'us-east-1'
-data_dir = 's3://llm-finetune-us-east-1-{aws_account}/eval/tones/'
-# "./data"
-deploy_bucket_name = 'llm-finetune-us-east-1-{aws_account}'
+# region = 'us-east-1'
+region = 'us-west-2'
+deploy_bucket_name = 'llm-finetune-{region}-{aws_account}'
+data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/tones/'
+# data_dir = './data/'
+human_eval_dir = 's3://llm-finetune-{region}-{aws_account}/human_eval/tones/'
 deploy_bucket_prefix = 'models'
-sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'
+sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-{region}'
 endpoint_type = 'bedrock'
 model = 'anthropic.claude-3-haiku-20240307-v1:0'
 
@@ -37,9 +39,33 @@ model = 'Phi-3-5-mini-instruct'
 hf_name = 'microsoft/Phi-3.5-mini-instruct'
 endpoint_type = 'sagemaker'
 
+[qwen-3-0-6B]
+model = 'Qwen3-0-6B'
+hf_name = 'Qwen/Qwen3-0.6B' # instruct is now this, and base is appended with 'base'
+endpoint_type = 'sagemaker'
+thinking = false
+
 [qwen-2-5-1-5B]
 model = 'Qwen2-5-1-5B-Instruct'
 hf_name = 'Qwen/Qwen2.5-1.5B-Instruct'
+endpoint_type = 'sagemaker'
+
+[qwen-3-1-7B]
+model = 'Qwen3-1-7B'
+hf_name = 'Qwen/Qwen3-1.7B' # instruct is now this, and base is appended with 'base'
+endpoint_type = 'sagemaker'
+thinking = false
+
+[qwen-3-1-7B-async]
+model = 'Qwen3-1-7B-async'
+hf_name = 'Qwen/Qwen3-1.7B' # instruct is now this, and base is appended with 'base'
+endpoint_type = 'sagemaker'
+thinking = false
+asynchronous = true
+
+[qwen-3-4B]
+model = 'Qwen3-4B'
+hf_name = 'Qwen/Qwen3-4B-Instruct-2507' # this finetune is non-thinking only
 endpoint_type = 'sagemaker'
 
 [phi-3-ollama]
