@@ -68,6 +68,13 @@ model = 'Qwen3-4B'
 hf_name = 'Qwen/Qwen3-4B-Instruct-2507'
 endpoint_type = 'sagemaker'
 
+[qwen-3-4B-async]
+model = 'Qwen3-4B'
+hf_name = 'Qwen/Qwen3-4B-Instruct-2507'
+endpoint_type = 'sagemaker'
+thinking = false
+asynchronous = true
+
 [phi-3-ollama]
 model = 'phi3'
 hf_name = 'microsoft/Phi-3.5-mini-instruct'
