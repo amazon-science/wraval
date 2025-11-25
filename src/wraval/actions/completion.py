@@ -15,14 +15,40 @@ import uuid
 
 
 # Function to extract last assistant response from each entry
-def extract_last_assistant_response(data):
-
-    if r"<\|assistant\|>" in data: # phi
+def extract_last_assistant_response(data, model_name=None):
+    """
+    Extract the assistant's response from model output.
+    
+    Args:
+        data: Raw model output string
+        model_name: Model identifier (e.g., 'Phi-3-5-mini-instruct', 'Qwen3-4B')
+                   If None, attempts to detect format from data
+    
+    Returns:
+        Cleaned assistant response string
+    """
+    # Determine model type from model_name if provided
+    if model_name:
+        model_lower = model_name.lower()
+        is_phi = 'phi' in model_lower
+        is_qwen = 'qwen' in model_lower
+    else:
+        # Fallback to pattern detection if model_name not provided
+        is_phi = r"<\|assistant\|>" in data
+        is_qwen = r"<|im_start|>assistant" in data
+    
+    # Handle Phi models
+    if is_phi:
+        if r"<\|assistant\|>" not in data:
+            return data
         assistant_part = data.split(r"<\|assistant\|>")[-1]
-        response = response.replace(r"<\|end\|>", "").strip()
+        response = assistant_part.replace(r"<\|end\|>", "").strip()
         return response
-        
-    if r"<|im_start|>assistant" in data: # qwen
+    
+    # Handle Qwen models
+    if is_qwen:
+        if r"<|im_start|>assistant" not in data:
+            return data
         assistant_part = data.split(r"<|im_start|>assistant")[-1]
         
         # Remove the thinking part if it exists
@@ -34,6 +60,7 @@ def extract_last_assistant_response(data):
         response = response.replace(r"<|im_end|>", "").strip()
         return response
     
+    # Return data as-is if no known format detected
     return data
 
 def get_bedrock_completion(settings, prompt, system_prompt=None):
@@ -211,7 +238,7 @@ def invoke_sagemaker_endpoint(
         )
         json_output = response["Body"].readlines()
         plain_output = "\n".join(json.loads(json_output[0]))
-        last_assistant = extract_last_assistant_response(plain_output)
+        last_assistant = extract_last_assistant_response(plain_output, model_name=endpoint_name)
         print("Test response:", last_assistant)
         return last_assistant
     except Exception as e:
