@@ -27,8 +27,7 @@ dependencies = [
     "requests",
     "accelerate",
     "torchvision",
-    "typer",
-    "pyarrow>=14.0.0,<23.0.0"
+    "typer"
 ]
 
 [project.scripts]
