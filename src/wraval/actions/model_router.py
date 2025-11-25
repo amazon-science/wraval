@@ -2,6 +2,7 @@ from .completion import (
     batch_get_bedrock_completions,
     invoke_sagemaker_endpoint,
     invoke_ollama_endpoint,
+    batch_invoke_sagemaker_endpoint,
 )
 from .format import format_prompt
 from transformers import AutoTokenizer
@@ -45,14 +46,30 @@ class SageMakerRouter(HuggingFaceModelRouter):
     def __init__(self, master_sys_prompt, settings):
         super().__init__(master_sys_prompt, settings)
         self.model_name = settings.model
+        self.region = settings.region
+        self.thinking = None
+        if settings.exists('thinking'):
+            self.thinking = settings.thinking
+        self.async_config = False
+        if settings.exists('asynchronous'):
+            self.async_config = settings.asynchronous
+        self.deploy_bucket_name = settings.deploy_bucket_name
 
     def get_completion(self, queries: List[str]) -> List[str]:
         prompts = [
-            format_prompt(text, self.master_sys_prompt, self.tokenizer, type="hf")
+            format_prompt(text, self.master_sys_prompt, self.tokenizer, "hf", self.thinking)
             for text in queries
         ]
+        if self.async_config:
+            return batch_invoke_sagemaker_endpoint(prompts, 
+                                                   self.model_name, 
+                                                   self.region, 
+                                                   self.deploy_bucket_name)
         return [
-            invoke_sagemaker_endpoint({"inputs": prompt}, self.model_name) for prompt in tqdm(prompts)
+            invoke_sagemaker_endpoint({"inputs": prompt}, 
+                                      self.model_name, 
+                                      self.region) 
+                                      for prompt in tqdm(prompts)
         ]
 
 

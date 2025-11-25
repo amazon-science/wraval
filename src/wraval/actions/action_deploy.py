@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 import boto3
 import torch
 from sagemaker.huggingface import HuggingFaceModel
+from sagemaker.async_inference.async_inference_config import AsyncInferenceConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 PACKAGE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -80,7 +81,7 @@ def write_model_to_s3(settings, model_name):
     return s3_uri
 
 
-def deploy_endpoint(s3_uri, role, endpoint_name):
+def deploy_endpoint(s3_uri, role, endpoint_name, async_config=None):
     env = {
         "HF_TASK": "text-generation",
         "HF_HUB_OFFLINE": "1",
@@ -100,13 +101,14 @@ def deploy_endpoint(s3_uri, role, endpoint_name):
         initial_instance_count=1,
         instance_type="ml.g5.2xlarge",
         endpoint_name=endpoint_name,
+        async_inference_config=async_config,
     )
 
 
 def validate_deployment(predictor):
     try:
         sagemaker_runtime_client = boto3.client("sagemaker-runtime")
-        input_string = json.dumps({"inputs": "Hello, my dog is a little"})
+        input_string = json.dumps({"inputs": "<|im_start|>user\nHello, can you pass me the milk?<|im_end|>\n<|im_start|>assistant\n"})
         response = sagemaker_runtime_client.invoke_endpoint(
             EndpointName=predictor.endpoint_name,
             Body=input_string.encode("utf-8"),
@@ -142,10 +144,13 @@ def cleanup_model_directory():
 def deploy(settings):
     validate_model_directory()
     cleanup_model_directory()
-    sanitized_model_name = settings.hf_name.split("/")[1].replace(".", "-")
+    sanitized_model_name = settings.model.replace(".", "-")
     load_artifacts(settings)
     s3_uri = write_model_to_s3(settings, sanitized_model_name)
+    async_config = None
+    if settings.exists('asynchronous'):
+        async_config = AsyncInferenceConfig()
     predictor = deploy_endpoint(
-        s3_uri, settings.sagemaker_execution_role_arn, sanitized_model_name
+        s3_uri, settings.sagemaker_execution_role_arn, sanitized_model_name, async_config
     )
     validate_deployment(predictor)
