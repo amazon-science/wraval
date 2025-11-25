@@ -65,7 +65,7 @@ asynchronous = true
 
 [qwen-3-4B]
 model = 'Qwen3-4B'
-hf_name = 'Qwen/Qwen3-4B-Instruct-2507' # this finetune is non-thinking only
+hf_name = 'Qwen/Qwen3-4B-Instruct-2507'
 endpoint_type = 'sagemaker'
 
 [phi-3-ollama]
