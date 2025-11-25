@@ -69,7 +69,7 @@ hf_name = 'Qwen/Qwen3-4B-Instruct-2507'
 endpoint_type = 'sagemaker'
 
 [qwen-3-4B-async]
-model = 'Qwen3-4B'
+model = 'Qwen3-4B-Async'
 hf_name = 'Qwen/Qwen3-4B-Instruct-2507'
 endpoint_type = 'sagemaker'
 thinking = false
