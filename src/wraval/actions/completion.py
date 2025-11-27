@@ -9,9 +9,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
 import boto3
+from botocore.client import Config
 import re
 import requests
 
+config = Config(connect_timeout=360, retries={'max_attempts': 0})
 
 # Function to extract last assistant response from each entry
 def extract_last_assistant_response(data):
@@ -46,7 +48,7 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
 
             converse_api_params.update({"messages": messages})
 
-            if "nova" not in settings.model:
+            if "nova" not in settings.model and "haiku-4-5" not in settings.model:
                 converse_api_params.update(
                     {"additionalModelRequestFields": {"top_p": 1}}
                 )
@@ -195,7 +197,7 @@ def invoke_sagemaker_endpoint(
     payload, endpoint_name="Phi-3-5-mini-instruct", region="us-east-1"
 ):
     try:
-        sagemaker_runtime_client = boto3.client("sagemaker-runtime", region_name=region)
+        sagemaker_runtime_client = boto3.client("sagemaker-runtime", region_name=region, config=config)
         input_string = json.dumps(payload)
         response = sagemaker_runtime_client.invoke_endpoint(
             EndpointName=endpoint_name,

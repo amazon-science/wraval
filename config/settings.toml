@@ -1,9 +1,9 @@
 [default]
 region = 'us-west-2'
 deploy_bucket_name = 'llm-finetune-{region}-{aws_account}'
-# data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/eng/tones/'
+data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/it/tones/'
 # data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/jp/tones/'
-data_dir = './data/'
+# data_dir = './data/'
 human_eval_dir = 's3://llm-finetune-{region}-{aws_account}/human_eval/tones/'
 deploy_bucket_prefix = 'models'
 sagemaker_execution_role_arn = 'arn:aws:iam::{aws_account}:role/sagemaker-execution-role-us-east-1'
@@ -16,6 +16,10 @@ endpoint_type = 'bedrock'
 
 [haiku-3-5]
 model = 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
+endpoint_type = 'bedrock'
+
+[haiku-4-5]
+model = 'global.anthropic.claude-haiku-4-5-20251001-v1:0'
 endpoint_type = 'bedrock'
 
 [sonnet-3]
@@ -45,6 +49,11 @@ endpoint_type = 'bedrock'
 [phi-3-5-4B]
 model = 'Phi-3-5-mini-instruct'
 hf_name = 'microsoft/Phi-3.5-mini-instruct'
+endpoint_type = 'sagemaker'
+
+[qwen-3-4B]
+model = 'Qwen3-4B'
+hf_name = 'Qwen/Qwen3-4B-Instruct-2507'
 endpoint_type = 'sagemaker'
 
 [qwen-2-5-1-5B]
