@@ -63,7 +63,7 @@ def extract_last_assistant_response(data, model_name=None):
     # Return data as-is if no known format detected
     return data
 
-def get_bedrock_completion(settings, prompt, system_prompt=None):
+def get_bedrock_completion(settings, prompt, system_prompt=None, show_prompt=False):
     bedrock_client = boto3.client(
         service_name="bedrock-runtime", region_name=settings.region
     )
@@ -86,14 +86,21 @@ def get_bedrock_completion(settings, prompt, system_prompt=None):
 
             converse_api_params.update({"messages": messages})
 
-            if "nova" not in settings.model:
+            if "nova" not in settings.model and "haiku-4-5" not in settings.model:
                 converse_api_params.update(
                     {"additionalModelRequestFields": {"top_p": 1}}
                 )
 
             if isinstance(system_prompt, str) and len(system_prompt) > 0:
                 converse_api_params.update({"system": [{"text": system_prompt}]})
-                # converse_api_params["messages"] = [{"role": "assistant", "content": [{"text": system_prompt}]}] + converse_api_params["messages"]
+
+            # Print the full request if show_prompt is enabled
+            if show_prompt:
+                print("\n" + "=" * 60)
+                print("BEDROCK REQUEST")
+                print("=" * 60)
+                print(json.dumps(converse_api_params, indent=2, default=str))
+                print("=" * 60 + "\n")
 
             response = bedrock_client.converse(**converse_api_params)
             return response["output"]["message"]["content"][0]["text"]
@@ -123,6 +130,7 @@ def batch_get_bedrock_completions(
         )
 
     results = [None] * len(prompts)
+    show_prompt = settings.get("show_prompt", False)
 
     # Add rate limiting at batch level
     completed_requests = 0
@@ -134,7 +142,8 @@ def batch_get_bedrock_completions(
         with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
             futures = [
                 executor.submit(
-                    process_prompt, i, prompts[i], system_prompts[i], settings
+                    process_prompt, i, prompts[i], system_prompts[i], settings,
+                    show_prompt and i == batch_start  # Only show first prompt
                 )
                 for i in range(batch_start, batch_end)
             ]
@@ -151,9 +160,9 @@ def batch_get_bedrock_completions(
     return results
 
 
-def process_prompt(index, prompt, system_prompt, settings):
+def process_prompt(index, prompt, system_prompt, settings, show_prompt=False):
     try:
-        response = get_bedrock_completion(settings, prompt, system_prompt)
+        response = get_bedrock_completion(settings, prompt, system_prompt, show_prompt)
         return index, response
     except Exception as e:
         return index, f"Error processing prompt {index}: {str(e)}"
@@ -226,24 +235,94 @@ def get_job_error_details(bedrock_client, job_arn):
 
 
 def invoke_sagemaker_endpoint(
-    payload, endpoint_name="Phi-3-5-mini-instruct", region="us-east-1"
+    payload, endpoint_name="Phi-3-5-mini-instruct", region="us-east-1",
+    max_retries=3, read_timeout=360, connect_timeout=30, show_prompt=False
 ):
-    try:
-        sagemaker_runtime_client = boto3.client("sagemaker-runtime", region_name=region)
-        input_string = json.dumps(payload)
-        response = sagemaker_runtime_client.invoke_endpoint(
-            EndpointName=endpoint_name,
-            Body=input_string.encode("utf-8"),
-            ContentType="application/json",
-        )
-        json_output = response["Body"].readlines()
-        plain_output = "\n".join(json.loads(json_output[0]))
-        last_assistant = extract_last_assistant_response(plain_output, model_name=endpoint_name)
-        print("Test response:", last_assistant)
-        return last_assistant
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        raise e
+    """
+    Invoke SageMaker endpoint with retry logic for transient errors.
+    
+    Handles:
+    - ExpiredTokenException: Refreshes credentials by creating new client
+    - ReadTimeoutError: Retries with exponential backoff
+    - Other transient errors: Retries with backoff
+    """
+    from botocore.config import Config
+    from botocore.exceptions import ReadTimeoutError
+    
+    # Print the payload if show_prompt is enabled
+    if show_prompt:
+        print("\n" + "=" * 60)
+        print("SAGEMAKER REQUEST")
+        print("=" * 60)
+        print(payload.get("inputs", payload))
+        print("=" * 60 + "\n")
+    
+    # Configure longer timeouts for SageMaker inference
+    boto_config = Config(
+        read_timeout=read_timeout,
+        connect_timeout=connect_timeout,
+        retries={'max_attempts': 0}  # We handle retries ourselves
+    )
+    
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            # Create fresh client on each attempt (handles expired tokens)
+            sagemaker_runtime_client = boto3.client(
+                "sagemaker-runtime", 
+                region_name=region,
+                config=boto_config
+            )
+            input_string = json.dumps(payload)
+            response = sagemaker_runtime_client.invoke_endpoint(
+                EndpointName=endpoint_name,
+                Body=input_string.encode("utf-8"),
+                ContentType="application/json",
+            )
+            json_output = response["Body"].readlines()
+            plain_output = "\n".join(json.loads(json_output[0]))
+            last_assistant = extract_last_assistant_response(plain_output, model_name=endpoint_name)
+            print("Test response:", last_assistant)
+            return last_assistant
+            
+        except ClientError as e:
+            error_code = e.response.get('Error', {}).get('Code', '')
+            last_exception = e
+            
+            if error_code == 'ExpiredTokenException':
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) + random.uniform(0, 1)
+                    print(f"Token expired, refreshing credentials and retrying in {wait_time:.1f}s (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                    
+            print(f"ClientError: {str(e)}")
+            raise
+            
+        except ReadTimeoutError as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"Read timeout, retrying in {wait_time:.1f}s (attempt {attempt + 1}/{max_retries})")
+                time.sleep(wait_time)
+                continue
+            print(f"ReadTimeoutError after {max_retries} attempts: {str(e)}")
+            raise
+            
+        except Exception as e:
+            last_exception = e
+            # For other transient errors, retry with backoff
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"Error: {str(e)}, retrying in {wait_time:.1f}s (attempt {attempt + 1}/{max_retries})")
+                time.sleep(wait_time)
+                continue
+            print(f"Error after {max_retries} attempts: {str(e)}")
+            raise
+    
+    # Should not reach here, but just in case
+    raise last_exception
 
 
 def invoke_ollama_endpoint(payload, endpoint_name, url="127.0.0.1:11434"):

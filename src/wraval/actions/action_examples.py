@@ -25,15 +25,22 @@ def get_examples(
         print(f"Loading data from: {data_location}")
         d = load_latest_dataset(data_location)
 
-        if tone and tone != "all":
-            if tone not in d["tone"].unique():
-                print(f"Error: Tone '{tone}' not found in dataset.")
+        # Convert enum to string value if needed
+        tone_str = tone.value if hasattr(tone, "value") else tone
+
+        if tone_str and tone_str != "all":
+            if tone_str not in d["tone"].unique():
+                print(f"Error: Tone '{tone_str}' not found in dataset.")
                 print(f"Available tones: {', '.join(d['tone'].unique())}")
                 return
-            d = d[d["tone"] == tone]
-            print(f"\nExamples for Tone: {tone}")
+            d = d[d["tone"] == tone_str]
+            print(f"\nExamples for Tone: {tone_str}")
         else:
             print("\nExamples by Tone and Model:")
+
+        # Check for language confidence columns (e.g., EN, DE) and binary (is_EN, is_DE)
+        lang_cols = [col for col in d.columns if col.isupper() and len(col) == 2]
+        is_lang_cols = [col for col in d.columns if col.startswith("is_") and len(col) == 5]
 
         # Get unique combinations of tone and inference_model
         combinations = d[["tone", "inference_model"]].drop_duplicates()
@@ -51,11 +58,21 @@ def get_examples(
                 examples = examples.sample(n=n_examples, random_state=42)
 
             # Display each example
-            for idx, row in examples.iterrows():
-                print(f"\nExample {idx + 1}:")
+            for i, (idx, row) in enumerate(examples.iterrows(), 1):
+                print(f"\nExample {i}:")
                 print(f"Original: {row['synthetic_data']}")
                 print(f"Rewrite:  {row['rewrite']}")
-                print(f"Score:    {row['overall_score']:.2f}")
+                score_str = f"Score: {row['overall_score']:.2f}"
+                # Add language confidence if available
+                for col in lang_cols:
+                    if col in row and pd.notna(row[col]):
+                        score_str += f" | {col}: {row[col]*100:.1f}%"
+                # Add binary detection if available
+                for col in is_lang_cols:
+                    if col in row and pd.notna(row[col]):
+                        label = "✓" if row[col] == 1 else "✗"
+                        score_str += f" | {col}: {label}"
+                print(score_str)
                 print("-" * 40)
 
     except FileNotFoundError as e:

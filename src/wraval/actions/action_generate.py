@@ -5,7 +5,7 @@
 import pandas as pd
 from .data_utils import write_dataset
 from dynaconf import Dynaconf
-from .prompt_tones import get_all_tones, Tone
+from .prompt_loader import get_all_tones, Tone
 import os
 
 from .data_generation_prompts import *

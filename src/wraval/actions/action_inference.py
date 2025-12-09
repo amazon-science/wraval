@@ -5,14 +5,23 @@
 import pandas as pd
 from dynaconf import Dynaconf
 from .data_utils import write_dataset, load_latest_dataset
-from .prompt_tones import get_prompt, Tone
 from .model_router import route_completion
+
+
+def get_prompt_functions(settings: Dynaconf):
+    """Get the appropriate prompt functions based on settings."""
+    if settings.custom_prompts:
+        from wraval.custom_prompts.prompt_loader import get_prompt, Tone
+    else:
+        from .prompt_loader import get_prompt, Tone
+    return get_prompt, Tone
 
 
 def run_inference(
     settings: Dynaconf, model_name: str, upload_s3: bool, data_dir: str
 ) -> None:
     """Run inference on sentences using the specified model"""
+    get_prompt, Tone = get_prompt_functions(settings)
     results = load_latest_dataset(data_dir)
 
     no_rewrite = False

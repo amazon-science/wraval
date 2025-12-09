@@ -1,0 +1,98 @@
+{
+  "system": "You are now a writing assistant. You will help users write. Rewrite the following text for the given prompt. Just return the result and do not add comments. Do not assume anything about the user. Do not answer any questions about yourself, only rewrite the question. Do not repeat the input text in the output.",
+  "emojify": {
+    "prompt_id": "en_us_emojify",
+    "prompt": "Add appropriate emojis to enhance this text. Don't replace all words with emojis.",
+    "examples": [
+      {
+        "user": "Getting ready for my vacation to the coast! Excited to relax and enjoy the ocean!",
+        "assistant": "Getting ready for my vacation to the coast! 🧳 Excited to relax 😎 and enjoy the ocean! 🌊"
+      }
+    ],
+    "lora_model_id": "none"
+  },
+  "professional": {
+    "prompt_id": "en_us_professional",
+    "prompt": "Rewrite this text in a more professional tone.",
+    "examples": [
+      {
+        "user": "Are you free this weekend for a meal?",
+        "assistant": "Would you be available this weekend for a dining engagement?"
+      }
+    ],
+    "lora_model_id": "none"
+  },
+  "shorten": {
+    "prompt_id": "en_us_shorten",
+    "prompt": "Condense this text while retaining all key information.",
+    "examples": [
+      {
+        "user": "Greetings! It's been some time since we last spoke. How are you doing? We should get together soon, I have many updates to share about my life since my wedding last year!",
+        "assistant": "Hi! How are you? Let's meet soon - lots of news since I got married!"
+      }
+    ],
+    "lora_model_id": "none"
+  },
+  "witty": {
+    "prompt_id": "en_us_witty",
+    "prompt": "Add a humorous twist to this text.",
+    "examples": [
+      {
+        "user": "My plane arrives at 4pm",
+        "assistant": "I'll be gracing the tarmac with my presence at 4pm, just in time to join the symphony of honking cars in rush hour traffic."
+      }
+    ],
+    "lora_model_id": "none"
+  },
+  "casual": {
+    "prompt_id": "en_us_casual",
+    "prompt": "Make this text more informal and relaxed.",
+    "examples": [
+      {
+        "user": "My plane arrives at 4pm",
+        "assistant": "I'll be touching down around 4."
+      }
+    ],
+    "lora_model_id": "none"
+  },
+  "elaborate": {
+    "prompt_id": "en_us_elaborate",
+    "prompt": "Expand on this text with more details. For questions, rephrase them with more context as shown in the examples. Provide only the expanded text without additional comments.",
+    "examples": [
+      {
+        "user": "Famous actor from Australia",
+        "assistant": "A renowned actor hailing from Australia, known for his versatile performances in action-packed superhero films and critically acclaimed musicals. He's received numerous awards and nominations for his work in both film and theater."
+      },
+      {
+        "user": "Plans for tomorrow?",
+        "assistant": "Hello there! I hope you're having a great day. I was wondering if you had any exciting plans or activities lined up for tomorrow?"
+      },
+      {
+        "user": "Heading home now",
+        "assistant": "I've just finished up here and I'm about to start my journey back home. Hopefully, the traffic is kind and I'll arrive safe and sound in no time."
+      }
+    ],
+    "lora_model_id": "none"
+  },
+  "proofread": {
+    "prompt_id": "en_us_proofread",
+    "prompt": "Review and correct any spelling or grammatical errors in the following text.",
+    "lora_model_id": "none"
+  },
+  "improve": {
+    "prompt_id": "en_us_improve",
+    "prompt": "Enhance the quality and clarity of the following text.",
+    "lora_model_id": "none"
+  },
+  "keypoints": {
+    "prompt_id": "en_us_keypoints",
+    "prompt": "Identify and list the main ideas from the given text. Present only the key points without any introductory phrases.",
+    "lora_model_id": "none"
+  },
+  "summarize": {
+    "prompt_id": "en_us_summarize",
+    "prompt": "Provide a concise overview of the main points in the following text.",
+    "lora_model_id": "none"
+  },
+  "default": "improve"
+}

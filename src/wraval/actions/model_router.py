@@ -47,6 +47,7 @@ class SageMakerRouter(HuggingFaceModelRouter):
         super().__init__(master_sys_prompt, settings)
         self.model_name = settings.model
         self.region = settings.region
+        self.settings = settings
         self.thinking = None
         if settings.exists('thinking'):
             self.thinking = settings.thinking
@@ -60,17 +61,24 @@ class SageMakerRouter(HuggingFaceModelRouter):
             format_prompt(text, self.master_sys_prompt, self.tokenizer, "hf", self.thinking)
             for text in queries
         ]
+        show_prompt = self.settings.get("show_prompt", False)
+        
         if self.async_config:
             return batch_invoke_sagemaker_endpoint(prompts, 
                                                    self.model_name, 
                                                    self.region, 
                                                    self.deploy_bucket_name)
-        return [
-            invoke_sagemaker_endpoint({"inputs": prompt}, 
-                                      self.model_name, 
-                                      self.region) 
-                                      for prompt in tqdm(prompts)
-        ]
+        results = []
+        for i, prompt in enumerate(tqdm(prompts)):
+            results.append(
+                invoke_sagemaker_endpoint(
+                    {"inputs": prompt}, 
+                    self.model_name, 
+                    self.region,
+                    show_prompt=show_prompt and i == 0  # Only show first
+                )
+            )
+        return results
 
 
 class BedrockModelRouter(ModelRouter):
@@ -84,8 +92,11 @@ class BedrockModelRouter(ModelRouter):
             for text in queries
         ]
 
+        # Extract sys_prompt string from Prompt object
+        sys_prompt_str = self.master_sys_prompt.sys_prompt if self.master_sys_prompt else None
+
         return batch_get_bedrock_completions(
-            self.settings, prompts, [self.master_sys_prompt] * len(prompts)
+            self.settings, prompts, [sys_prompt_str] * len(prompts)
         )
 
 

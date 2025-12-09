@@ -24,8 +24,9 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type="bedrock", think
                 sys_prompt = [{"role": "system", "content": prompt.sys_prompt + '/no_think'}]
             messages = []
             if prompt.examples:
-                for k, v in prompt.examples[0].items():
-                    messages.extend([{"role": k, "content": v}])
+                for example in prompt.examples:
+                    for k, v in example.items():
+                        messages.extend([{"role": k, "content": v}])
             usr_prompt = [{"role": "user", "content": usr_prompt}]
             p = sys_prompt + messages + usr_prompt
         else:
@@ -40,9 +41,10 @@ def format_prompt(usr_prompt, prompt=None, tokenizer=None, type="bedrock", think
         if prompt:
             messages = []
             if prompt.examples:
-                for k, v in prompt.examples[0].items():
-                    # Format each message content as a list of text blocks
-                    messages.extend([{"role": k, "content": [{"text": v}]}])
+                for example in prompt.examples:
+                    for k, v in example.items():
+                        # Format each message content as a list of text blocks
+                        messages.extend([{"role": k, "content": [{"text": v}]}])
             # Format user prompt as a list of text blocks
             usr_prompt = [{"role": "user", "content": [{"text": usr_prompt}]}]
             p = messages + usr_prompt
