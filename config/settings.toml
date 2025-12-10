@@ -1,9 +1,9 @@
 [default]
 # region = 'us-east-1'
 region = 'us-west-2'
-expected_language = 'de'  # Language code for detection: en/de/ja/fr/es/it/pt/zh/ko/nl
+expected_language = 'fr'  # Language code for detection: en/de/ja/fr/es/it/pt/zh/ko/nl
 deploy_bucket_name = 'llm-finetune-{region}-{aws_account}'
-data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/de/tones/'
+data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/fr_ca/tones/'
 # data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/jp/tones/'
 # data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/tones/'
 # data_dir = './data/'

@@ -24,10 +24,7 @@ def extract_language_from_path(data_dir: str) -> str:
 
 def get_prompt_functions(settings: Dynaconf):
     """Get the appropriate prompt functions based on settings."""
-    if settings.custom_prompts:
-        from wraval.custom_prompts.prompt_loader import get_prompt, Tone, get_commit_hash
-    else:
-        from .prompt_loader import get_prompt, Tone, get_commit_hash
+    from .prompt_loader import get_prompt, Tone, get_commit_hash
     return get_prompt, Tone, get_commit_hash
 
 
@@ -42,7 +39,7 @@ def run_inference(
     language = extract_language_from_path(data_dir)
     
     # Get commit hash from prompt metadata
-    commit_hash = get_commit_hash(language=language) if settings.custom_prompts else None
+    commit_hash = get_commit_hash(language=language, custom_prompts=settings.custom_prompts)
 
     no_rewrite = False
 
@@ -69,7 +66,7 @@ def run_inference(
         """
         )
 
-        tone_prompt = get_prompt(Tone(tone), language=language)
+        tone_prompt = get_prompt(Tone(tone), language=language, custom_prompts=settings.custom_prompts)
 
         queries = results[results["tone"] == tone]["synthetic_data"].unique()
 

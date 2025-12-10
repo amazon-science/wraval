@@ -84,35 +84,86 @@ class PromptConfig:
 # Module-level factory for backward compatibility
 _prompt_config: Optional[PromptConfig] = None
 
-def get_prompt(tone: Tone, json_path: str = None, language: str = None) -> Prompt:
-    """Drop-in replacement for current get_prompt function"""
+def get_prompt(tone: Tone, json_path: str = None, language: str = None, custom_prompts: bool = False) -> Prompt:
+    """Load prompt from JSON file
+    
+    Args:
+        tone: The tone to get prompt for
+        json_path: Optional explicit path to JSON file
+        language: Optional language code (e.g., 'de', 'en_us', 'ja')
+        custom_prompts: If True, load from custom_prompts folder, else from actions folder
+    """
     global _prompt_config
     
     if json_path:
-        # Allow custom path (for custom_prompts)
+        # Allow explicit path
         config = PromptConfig(json_path)
     else:
-        # Use default path with caching
-        if _prompt_config is None:
-            default_path = Path(__file__).parent / "prompt_tones.json"
+        # Determine base directory
+        if custom_prompts:
+            base_dir = Path(__file__).parent.parent / "custom_prompts"
+        else:
+            base_dir = Path(__file__).parent
+        
+        # Determine which JSON file to load based on language
+        if language and custom_prompts:
+            # Map language codes to JSON filenames (only for custom prompts)
+            lang_map = {
+                'de': 'de.json',
+                'en': 'en_us.json',
+                'en_us': 'en_us.json',
+                'en_uk': 'en_uk.json',
+                'ja': 'ja.json',
+                'jp': 'ja.json',  # alias
+            }
+            json_file = lang_map.get(language.lower(), 'en_us.json')
+            default_path = base_dir / json_file
+        else:
+            # Use default: prompt_tones.json for actions, en_us.json for custom
+            json_file = "en_us.json" if custom_prompts else "prompt_tones.json"
+            default_path = base_dir / json_file
+        
+        # Cache per path
+        if _prompt_config is None or getattr(_prompt_config, 'json_path', None) != default_path:
             _prompt_config = PromptConfig(default_path)
         config = _prompt_config
     
     return config.get_prompt(tone)
 
-def get_all_tones():
-    return [tone.value.lower() for tone in Tone]
-
-def get_commit_hash(json_path: str = None) -> Optional[str]:
+def get_commit_hash(json_path: str = None, language: str = None, custom_prompts: bool = False) -> Optional[str]:
     """Get commit hash from prompt JSON metadata"""
     global _prompt_config
     
     if json_path:
         config = PromptConfig(json_path)
     else:
-        if _prompt_config is None:
-            default_path = Path(__file__).parent / "prompt_tones.json"
+        # Determine base directory
+        if custom_prompts:
+            base_dir = Path(__file__).parent.parent / "custom_prompts"
+        else:
+            base_dir = Path(__file__).parent
+        
+        # Determine which JSON file to load based on language
+        if language and custom_prompts:
+            lang_map = {
+                'de': 'de.json',
+                'en': 'en_us.json',
+                'en_us': 'en_us.json',
+                'en_uk': 'en_uk.json',
+                'ja': 'ja.json',
+                'jp': 'ja.json',
+            }
+            json_file = lang_map.get(language.lower(), 'en_us.json')
+            default_path = base_dir / json_file
+        else:
+            json_file = "en_us.json" if custom_prompts else "prompt_tones.json"
+            default_path = base_dir / json_file
+        
+        if _prompt_config is None or getattr(_prompt_config, 'json_path', None) != default_path:
             _prompt_config = PromptConfig(default_path)
         config = _prompt_config
     
     return config.commit_hash
+
+def get_all_tones():
+    return [tone.value.lower() for tone in Tone]
