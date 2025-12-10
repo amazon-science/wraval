@@ -107,17 +107,17 @@ def get_prompt(tone: Tone, json_path: str = None, language: str = None, custom_p
         
         # Determine which JSON file to load based on language
         if language and custom_prompts:
-            # Map language codes to JSON filenames (only for custom prompts)
-            lang_map = {
-                'de': 'de.json',
-                'en': 'en_us.json',
-                'en_us': 'en_us.json',
-                'en_uk': 'en_uk.json',
-                'ja': 'ja.json',
-                'jp': 'ja.json',  # alias
-            }
-            json_file = lang_map.get(language.lower(), 'en_us.json')
+            # Direct mapping: language code to JSON filename
+            json_file = f"{language}.json"
             default_path = base_dir / json_file
+            
+            # Check if file exists
+            if not default_path.exists():
+                raise FileNotFoundError(
+                    f"Prompt file not found: {default_path}\n"
+                    f"Language '{language}' is not supported. "
+                    f"Please create {json_file} in {base_dir}"
+                )
         else:
             # Use default: prompt_tones.json for actions, en_us.json for custom
             json_file = "en_us.json" if custom_prompts else "prompt_tones.json"
@@ -145,16 +145,17 @@ def get_commit_hash(json_path: str = None, language: str = None, custom_prompts:
         
         # Determine which JSON file to load based on language
         if language and custom_prompts:
-            lang_map = {
-                'de': 'de.json',
-                'en': 'en_us.json',
-                'en_us': 'en_us.json',
-                'en_uk': 'en_uk.json',
-                'ja': 'ja.json',
-                'jp': 'ja.json',
-            }
-            json_file = lang_map.get(language.lower(), 'en_us.json')
+            # Direct mapping: language code to JSON filename
+            json_file = f"{language}.json"
             default_path = base_dir / json_file
+            
+            # Check if file exists
+            if not default_path.exists():
+                raise FileNotFoundError(
+                    f"Prompt file not found: {default_path}\n"
+                    f"Language '{language}' is not supported. "
+                    f"Please create {json_file} in {base_dir}"
+                )
         else:
             json_file = "en_us.json" if custom_prompts else "prompt_tones.json"
             default_path = base_dir / json_file
