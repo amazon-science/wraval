@@ -79,8 +79,15 @@ def get_results(settings: Dynaconf, tone: Optional[str] = None, export_xlsx: boo
         for col in is_lang_cols:
             agg_cols[col] = "mean"
 
-        # Group by model and tone
-        grouped = d.groupby(["inference_model", "tone"]).agg(agg_cols)
+        # Check if prompt_commit column exists
+        group_cols = ["inference_model", "tone"]
+        if "prompt_commit" in d.columns:
+            # Fill NaN values with "no_commit" to include rows without commit hash
+            d["prompt_commit"] = d["prompt_commit"].fillna("no_commit")
+            group_cols.append("prompt_commit")
+
+        # Group by model, tone, and optionally commit hash
+        grouped = d.groupby(group_cols, dropna=False).agg(agg_cols)
         grouped = grouped.rename(columns={"has_rewrite": "n_samples"})
         grouped["n_samples"] = grouped["n_samples"].astype(int)
 
@@ -120,10 +127,23 @@ def get_results(settings: Dynaconf, tone: Optional[str] = None, export_xlsx: boo
             # Use net_score if available, otherwise overall_score
             score_col = "net_score" if "net_score" in grouped.columns else "overall_score"
 
-            # Pivot: tones as columns, models as rows
-            pivot = grouped.reset_index().pivot(
-                index="inference_model", columns="tone", values=score_col
-            )
+            # Reset index for pivoting
+            reset_df = grouped.reset_index()
+            
+            # Check if prompt_commit exists in the data
+            has_commit = "prompt_commit" in reset_df.columns
+            
+            if has_commit:
+                # Pivot with commit: create multi-index with model+commit as rows
+                reset_df["model_commit"] = reset_df["inference_model"] + " (" + reset_df["prompt_commit"] + ")"
+                pivot = reset_df.pivot(
+                    index="model_commit", columns="tone", values=score_col
+                )
+            else:
+                # Pivot: tones as columns, models as rows
+                pivot = reset_df.pivot(
+                    index="inference_model", columns="tone", values=score_col
+                )
 
             # Rename and reorder columns
             tone_order = [

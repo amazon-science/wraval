@@ -38,11 +38,16 @@ class PromptConfig:
     def __init__(self, json_path: str):
         self.json_path = Path(json_path)
         self._config = None
+        self.commit_hash = None
         self._load()
     
     def _load(self):
         with open(self.json_path) as f:
             self._config = json.load(f, object_hook=lambda d: SimpleNamespace(**d))
+        
+        # Extract commit hash from metadata if available
+        if hasattr(self._config, '_metadata') and hasattr(self._config._metadata, 'commit_hash'):
+            self.commit_hash = self._config._metadata.commit_hash
     
     def get_prompt(self, tone: Tone) -> Prompt:
         """Factory method matching current interface"""
@@ -79,7 +84,7 @@ class PromptConfig:
 # Module-level factory for backward compatibility
 _prompt_config: Optional[PromptConfig] = None
 
-def get_prompt(tone: Tone, json_path: str = None) -> Prompt:
+def get_prompt(tone: Tone, json_path: str = None, language: str = None) -> Prompt:
     """Drop-in replacement for current get_prompt function"""
     global _prompt_config
     
@@ -97,3 +102,17 @@ def get_prompt(tone: Tone, json_path: str = None) -> Prompt:
 
 def get_all_tones():
     return [tone.value.lower() for tone in Tone]
+
+def get_commit_hash(json_path: str = None) -> Optional[str]:
+    """Get commit hash from prompt JSON metadata"""
+    global _prompt_config
+    
+    if json_path:
+        config = PromptConfig(json_path)
+    else:
+        if _prompt_config is None:
+            default_path = Path(__file__).parent / "prompt_tones.json"
+            _prompt_config = PromptConfig(default_path)
+        config = _prompt_config
+    
+    return config.commit_hash
