@@ -7,7 +7,7 @@ WRAVAL helps in evaluating LLMs for writing assistant tasks like summarization, 
 ```bash
 uv venv
 source .venv/bin/activate
-uv pip install .
+uv pip install -e .
 wraval generate
 ```
 
@@ -54,7 +54,7 @@ wraval human-judge
 > Use a machine with CUDA support
 
 ```bash
-uv pip install ".[gpu]"
+uv pip install -e ".[gpu]"
 wraval deploy -m ...
 ```
 
