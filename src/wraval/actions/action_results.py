@@ -130,6 +130,13 @@ def get_results(settings: Dynaconf, tone: Optional[str] = None, export_xlsx: boo
             # Reset index for pivoting
             reset_df = grouped.reset_index()
             
+            # Filter out rows with NaN inference_model or tone
+            reset_df = reset_df.dropna(subset=["inference_model", "tone"])
+            
+            if len(reset_df) == 0:
+                print("No valid data to export")
+                return
+            
             # Check if prompt_commit exists in the data
             has_commit = "prompt_commit" in reset_df.columns
             
@@ -163,8 +170,11 @@ def get_results(settings: Dynaconf, tone: Optional[str] = None, export_xlsx: boo
                 "proofread": "Proofread",
             }
 
-            # Rename columns
-            pivot.columns = [tone_rename.get(col, col.capitalize()) for col in pivot.columns]
+            # Rename columns - handle NaN safely
+            pivot.columns = [
+                tone_rename.get(col, col.capitalize() if isinstance(col, str) else str(col)) 
+                for col in pivot.columns
+            ]
 
             # Reorder columns (only include existing ones)
             ordered_cols = ["Emojify", "Shorten/summarize", "Professional", "Witty",

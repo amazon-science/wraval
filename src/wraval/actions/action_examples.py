@@ -9,7 +9,7 @@ from typing import Optional
 
 
 def get_examples(
-    settings: Dynaconf, tone: Optional[str] = None, n_examples: int = 3
+    settings: Dynaconf, tone: Optional[str] = None, n_examples: int = 3, random_seed: int = 42
 ) -> None:
     """
     Load the latest dataset and display examples grouped by tone and model.
@@ -18,6 +18,7 @@ def get_examples(
         settings: Dynaconf settings object with data_dir setting
         tone: Optional tone to filter by
         n_examples: Number of examples to show per tone-model combination
+        random_seed: Random seed for sampling (default: 42)
     """
     try:
         # Use settings.data_dir which could be either local path or S3 URI
@@ -42,20 +43,36 @@ def get_examples(
         lang_cols = [col for col in d.columns if col.isupper() and len(col) == 2]
         is_lang_cols = [col for col in d.columns if col.startswith("is_") and len(col) == 5]
 
-        # Get unique combinations of tone and inference_model
-        combinations = d[["tone", "inference_model"]].drop_duplicates()
+        # Check if prompt_commit column exists
+        group_cols = ["tone", "inference_model"]
+        if "prompt_commit" in d.columns:
+            d["prompt_commit"] = d["prompt_commit"].fillna("no_commit")
+            group_cols.append("prompt_commit")
 
-        for _, (tone, model) in combinations.iterrows():
+        # Get unique combinations
+        combinations = d[group_cols].drop_duplicates()
+
+        for _, row in combinations.iterrows():
+            tone = row["tone"]
+            model = row["inference_model"]
+            commit = row.get("prompt_commit", None)
+            
             print("\n" + "=" * 80)
-            print(f"Tone: {tone} | Model: {model}")
+            if commit:
+                print(f"Tone: {tone} | Model: {model} | Commit: {commit}")
+            else:
+                print(f"Tone: {tone} | Model: {model}")
             print("=" * 80)
 
-            # Get examples for this tone-model combination
-            examples = d[(d["tone"] == tone) & (d["inference_model"] == model)]
+            # Get examples for this combination
+            mask = (d["tone"] == tone) & (d["inference_model"] == model)
+            if commit:
+                mask = mask & (d["prompt_commit"] == commit)
+            examples = d[mask]
 
             # Sample n_examples if we have more
             if len(examples) > n_examples:
-                examples = examples.sample(n=n_examples, random_state=42)
+                examples = examples.sample(n=n_examples, random_state=random_seed)
 
             # Display each example
             for i, (idx, row) in enumerate(examples.iterrows(), 1):

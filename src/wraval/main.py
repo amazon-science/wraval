@@ -190,6 +190,12 @@ def show_examples(
         "-n",
         help="Number of examples to show per tone-model combination",
     ),
+    random_seed: int = typer.Option(
+        42,
+        "--random-seed",
+        "-r",
+        help="Random seed for sampling examples",
+    ),
     custom_prompts: bool = typer.Option(
         False, "--custom-prompts", help="Load custom prompts from a prompt folder"
     ),
@@ -199,7 +205,7 @@ def show_examples(
 ):
     """Show examples from the dataset."""
     settings = get_settings(model, tone, custom_prompts, local_tokenizer_path)
-    get_examples(settings, tone, n_examples)
+    get_examples(settings, tone, n_examples, random_seed)
 
 
 @app.command()
