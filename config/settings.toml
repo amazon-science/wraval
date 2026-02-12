@@ -1,9 +1,9 @@
 [default]
 # region = 'us-east-1'
 region = 'us-west-2'
-expected_language = 'es'  # Language code for detection: en/de/ja/fr/es/it/pt/zh/ko/nl
+expected_language = 'en'  # Language code for detection: en/de/ja/fr/es/it/pt/zh/ko/nl
 deploy_bucket_name = 'llm-finetune-{region}-{aws_account}'
-data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/es_mx/tones/'
+data_dir = 's3://llm-finetune-{region}-{aws_account}/eval/sync/eng/tones/'
 # data_dir = './data/'
 human_eval_dir = 's3://llm-finetune-{region}-{aws_account}/human_eval/tones/'
 deploy_bucket_prefix = 'models'
@@ -33,6 +33,10 @@ endpoint_type = 'bedrock'
 
 [nova-lite]
 model = 'amazon.nova-lite-v1:0'
+endpoint_type = 'bedrock'
+
+[nova-lite-2]
+model = 'global.amazon.nova-2-lite-v1:0'
 endpoint_type = 'bedrock'
 
 [haiku-3-5-cross]
