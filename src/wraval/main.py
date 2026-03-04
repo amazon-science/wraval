@@ -260,6 +260,17 @@ def deploy_model(
         settings.cleanup_endpoints = True
     deploy(settings)
 
+@app.command()
+def webapp(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host to bind to"),
+    port: int = typer.Option(8000, "--port", "-p", help="Port to bind to"),
+    reload: bool = typer.Option(False, "--reload", help="Enable auto-reload for development"),
+):
+    """Start the WRAVAL webapp server."""
+    import uvicorn
+    uvicorn.run("wraval.webapp.app:app", host=host, port=port, reload=reload)
+
+
 
 def main():
     app()

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WRAVAL Webapp</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1>WRAVAL</h1>
+        <p class="subtitle">Writing Assist Evaluation</p>
+    </header>
+
+    <nav role="tablist" aria-label="Main navigation">
+        <button role="tab" class="tab active" aria-selected="true" aria-controls="panel-prompts" data-tab="prompts">Prompts</button>
+        <button role="tab" class="tab" aria-selected="false" aria-controls="panel-inference" data-tab="inference">Inference</button>
+        <button role="tab" class="tab" aria-selected="false" aria-controls="panel-judge" data-tab="judge">Judge</button>
+        <button role="tab" class="tab" aria-selected="false" aria-controls="panel-data" data-tab="data">Data</button>
+    </nav>
+
+    <main>
+        <section id="panel-prompts" role="tabpanel" aria-labelledby="tab-prompts" class="tab-panel active">
+            <h2>Prompt Editor</h2>
+            <p>View and edit tone prompt templates.</p>
+            <div id="prompts-content"></div>
+        </section>
+
+        <section id="panel-inference" role="tabpanel" aria-labelledby="tab-inference" class="tab-panel" hidden>
+            <h2>Inference Runner</h2>
+            <p>Trigger model inference on datasets.</p>
+            <div id="inference-content"></div>
+        </section>
+
+        <section id="panel-judge" role="tabpanel" aria-labelledby="tab-judge" class="tab-panel" hidden>
+            <h2>LLM Judge</h2>
+            <p>Run LLM-as-a-judge evaluation.</p>
+            <div id="judge-content"></div>
+        </section>
+
+        <section id="panel-data" role="tabpanel" aria-labelledby="tab-data" class="tab-panel" hidden>
+            <h2>Data Table</h2>
+            <p>View evaluation datasets.</p>
+            <div id="data-content"></div>
+        </section>
+    </main>
+
+    <script src="/app.js"></script>
+</body>
+</html>
