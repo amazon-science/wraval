@@ -164,11 +164,14 @@ def llm_judge(
 def show_results(
     tone: ToneType = typer.Option(
         ToneType.ALL, "--type", "-t", help="Type of dataset to show examples for"
-    )
+    ),
+    export_xlsx: bool = typer.Option(
+        False, "--xlsx", "-x", help="Export to xlsx and open"
+    ),
 ):
     """Show results for the dataset."""
     settings = get_settings()
-    get_results(settings, tone)
+    get_results(settings, tone, export_xlsx)
 
 
 @app.command()
@@ -238,6 +241,14 @@ def human_judge_parsing():
     """Parse human judgments, merge it to the original results table and create a plot."""
     settings = get_settings()
     parse_human_judgements(settings)
+
+@app.command()
+def detect_lang():
+    """Detect language confidence in outputs and add to dataset."""
+    from wraval.actions.action_detect_language import detect_language
+    settings = get_settings()
+    detect_language(settings)
+
 
 @app.command()
 def deploy_model(
