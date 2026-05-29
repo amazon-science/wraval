@@ -17,6 +17,7 @@ from wraval.actions.action_deploy import deploy
 from wraval.actions.action_examples import get_examples
 from wraval.actions.action_human_judge_upload import upload_human_judge
 import os
+import re
 import typer
 from typing import Optional
 from enum import Enum
@@ -39,6 +40,18 @@ class ToneType(str, Enum):
     SUMMARIZE = "summarize"
 
 
+SETTINGS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "config", "settings.toml"
+)
+
+
+def _known_models() -> list[str]:
+    """Return the list of model section names defined in settings.toml."""
+    with open(SETTINGS_PATH, "r") as f:
+        sections = re.findall(r"^\[([^]]+)\]", f.read(), re.MULTILINE)
+    return sorted(s for s in sections if s != "default")
+
+
 def get_settings(
     model: str = "haiku-3",
     tone: ToneType = ToneType.ALL,
@@ -46,12 +59,18 @@ def get_settings(
     local_tokenizer_path: Optional[str] = None,
 ) -> Dynaconf:
     """Get settings with the specified configuration."""
+    # Match Dynaconf's case_sensitive=False semantics so the validation
+    # doesn't reject names that Dynaconf itself would accept.
+    known_lower = {m.lower() for m in _known_models()}
+    if model.lower() != "default" and model.lower() not in known_lower:
+        raise ValueError(
+            f"Unknown model '{model}'. "
+            f"Add a [{model}] section to config/settings.toml, or pick one of: "
+            f"{', '.join(_known_models())}."
+        )
+
     settings = Dynaconf(
-        settings_files=[
-            os.path.join(
-                os.path.dirname(__file__), "..", "..", "config", "settings.toml"
-            )
-        ],
+        settings_files=[SETTINGS_PATH],
         env=f"default,{model}",
         environments=True,
         case_sensitive=False,
